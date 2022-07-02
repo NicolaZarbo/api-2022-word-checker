@@ -1,0 +1,1 @@
+# api-2022-word-checker
