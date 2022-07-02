@@ -1,14 +1,17 @@
 # api-2022-word-checker
 ## TOC
-* [Partenza](#partenza-programma)
-* [Nuova partita](#nuova-partita)
-* [Nuove parole ammissibili](#nuove-parole-ammissibili)
-* [Fine partita](#fine-partita)
-* [Vincoli appresi da confronti](#vincoli-appresi-da-confronti)
-* [Stampa filtrate](#stampa-filtrate)
+
+- [WordChecker](#wordchecker)
+  - [Partenza programma](#partenza-programma)
+  - [Nuova partita](#nuova-partita)
+  - [Nuove parole ammissibili](#nuove-parole-ammissibili)
+  - [Confronto parole](#confronto-parole)
+  - [Fine partita](#fine-partita)
+  - [Vincoli appresi da confronti](#vincoli-appresi-da-confronti)
+  - [Stampa filtrate](#stampa-filtrate)
 
 
-## WordChecker
+# WordChecker
 * L'obiettivo del progetto di quest'anno è di realizzare un sistema che,
 al suo cuore, controlla la corrispondenza tra le lettere di 2 parole di
 ugual lunghezza.  
@@ -22,7 +25,7 @@ caratteri alfabetici minuscoli (a-z) o maiuscoli (A-Z), cifre numeriche
         djHD1af9fj7g__l-ssOP
  
 
-### Partenza programma
+## Partenza programma
  Il sistema legge da standard input una sequenza di informazioni e istruzioni, e produce delle stringhe in output a seconda dei casi.  
 
 *Più precisamente, il sistema legge:*
@@ -35,7 +38,9 @@ Si dia pure per scontato che la sequenza di parole non contenga duplicati
 
 A quel punto, viene letta da standard input una sequenza di "partite" in cui l'inizio di ogni nuova partita è marcato dal comando (letto sempre da input) **+nuova_partita** .
 
-### Nuova partita
+-----
+
+## Nuova partita
  Le sequenze di stringhe in input per ogni partita ( successive al comando
 **+nuova_partita** ) sono fatte nel seguente modo:
 * parola di riferimento (di lunghezza **k** caratteri)  
@@ -46,7 +51,9 @@ A quel punto, viene letta da standard input una sequenza di "partite" in cui l'i
  Ogni tanto, nella sequenza di stringhe in input, può comparire il comando
 **+stampa_filtrate**, il cui effetto è spiegato in seguito   
 
-### Nuove parole ammissibili 
+-----
+
+## Nuove parole ammissibili 
  Inoltre, sia durante una partita, che tra una partita e l'altra, possono comparire i
 comandi **+inserisci_inizio** e **+inserisci_fine** che racchiudono tra di loro una
 sequenza di nuove parole da aggiungere all'insieme delle parole ammissibili
@@ -54,8 +61,11 @@ sequenza di nuove parole da aggiungere all'insieme delle parole ammissibili
 siano parole duplicate (neanche rispetto alle parole già presenti nell'insieme di quelle
 ammissibili)
 
+-----
+
+## Confronto parole
  Per ogni parola letta **(p)**, da confrontare con la parola di riferimento **(r)**, il programma scrive su standard output una sequenza di **k** caratteri fatta nella seguente maniera.  
-*( p[1], ... p[k] caratteri della parola p, r[1], ... r[k] caratteri di r, e con res[1], ... res[k] caratteri della sequenza stampata )*
+*( p[1], ... p[k] caratteri della parola **p**, r[1], ... r[k] caratteri di **r**, e con res[1], ... res[k] caratteri della sequenza stampata )*
 
 * Per ogni 1 ≤ **i** ≤ **k**, si ha che
 * res[**i**] è il carattere **+** se l'i-esimo carattere di **p** è uguale all'i-esimo carattere di **r** .  
@@ -79,9 +89,8 @@ Per esempio, se
         /+|+++|++/+++++  
   
   
-Si noti che res[1] = / perché in r ci sono solo 5 b, p ne ha 6, e tutte le b successive a
-p[1] sono nel posto corretto similmente,  
-   res[10] = / perché **r** ha 5 "c", **p** ne ha 6, di cui 4 al posto giusto, e c'è già
+Si noti che res[1] = / perché in **r** ci sono solo 5 "b", **p** ne ha 6, e tutte le "b" successive a p[1] sono nel posto corretto   
+ similmente, res[10] = / perché **r** ha 5 "c", **p** ne ha 6, di cui 4 al posto giusto, e c'è già
 una "c" prima di p[10] (in p[7]) che è al posto sbagliato.
 
 *Altri esempi di confronti (dove la prima riga è la parola di riferimento r, la
@@ -102,17 +111,23 @@ seconda è p, e la terza è l'output res)*
 di quelle ammissibili, il programma scrive su standard output la stringa **not_exists**.
 * Se invece viene letta la parola **r** (cioè se **p** = **r**), allora il programma scrive **ok** *(senza stampare il risultato dettagliato del confronto)* e la partita termina.
 * Se, dopo avere letto **n** parole ammissibili (con **n**, si ricordi, numero
-massimo di parole da confrontare con **r**), nessuna di queste era uguale a **r**, il programma scrive **ko** (dopo avere stampato il risultato del confronto dell'ultima parola), e la partita termina.   
+massimo di parole da confrontare con **r**), nessuna di queste era uguale a **r**, il programma scrive **ko** (dopo avere stampato il risultato del confronto dell'ultima parola), e la partita termina.  
+* Inoltre, dopo ogni confronto, il programma deve stampare in output il numero di parole
+ammissibili ancora compatibili con i vincoli appresi (tranne nel caso in cui l'esito del
+confronto sia **not_exists**) 
 
 
-### Fine partita
+-----
+
+## Fine partita
 Dopo che la partita è finita:
 * Non ci possono essere altre parole da confrontare (ma ci potrebbe essere
 l'inserimento di nuove parole ammissibili)
 * Se in input c'è il comando **+nuova_partita**, ha inizio una nuova partita
 
+-----
 
-### Vincoli appresi da confronti
+## Vincoli appresi da confronti
 Ogni confronto tra **p** e **r** produce dei vincoli appresi dal confronto  
 Per esempio, dal seguente confronto
 
@@ -142,14 +157,15 @@ Si noti che i vincoli appresi riguardano, per ogni simbolo:
 3. posti in cui quel simbolo non può comparire in **r**
 4. numero minimo di volte che il simbolo compare in **r**
 5. numero esatto di volte che il simbolo compare in **r**  
-  si noti che il vincolo 5 è più forte del vincolo 4
-* l'ordine dei simboli (usato per stabilire l'ordine lessicografico delle parole) è quello specificato dallo standard ASCII
-* Inoltre, dopo ogni confronto, il programma deve stampare in output il numero di parole
-ammissibili ancora compatibili con i vincoli appresi (tranne nel caso in cui l'esito del
-confronto sia **not_exists**)
+  *(si noti che il vincolo 5 è più forte del vincolo 4)*
+> l'ordine dei simboli (usato per stabilire l'ordine lessicografico delle parole) è quello specificato dallo standard ASCII
 
-### Stampa filtrate
+
+-----
+
+## Stampa filtrate
 Quando, durante una partita, da input si legge il comando **+stampa_filtrate**, il
 programma deve produrre in output, in ordine lessicografico, l'insieme delle parole
 ammissibili che sono compatibili con i vincoli appresi fino a quel momento nella partita,
 scritte una per riga  .
+
