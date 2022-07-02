@@ -2,7 +2,7 @@
 ## TOC
 * [Partenza](#partenza-programma)
 * [Nuova partita](#nuova-partita)
-* [Nuove parole ammissibili](#nuove-parole-ammissimibili)
+* [Nuove parole ammissibili](#nuove-parole-ammissibili)
 * [Fine partita](#fine-partita)
 * [Vincoli appresi da confronti](#vincoli-appresi-da-confronti)
 * [Stampa filtrate](#stampa-filtrate)
@@ -148,7 +148,7 @@ Si noti che i vincoli appresi riguardano, per ogni simbolo:
 ammissibili ancora compatibili con i vincoli appresi (tranne nel caso in cui l'esito del
 confronto sia **not_exists**)
 
-### Stampa_filtrate
+### Stampa filtrate
 Quando, durante una partita, da input si legge il comando **+stampa_filtrate**, il
 programma deve produrre in output, in ordine lessicografico, l'insieme delle parole
 ammissibili che sono compatibili con i vincoli appresi fino a quel momento nella partita,
