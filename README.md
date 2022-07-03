@@ -67,7 +67,7 @@ ammissibili)
  Per ogni parola letta **(p)**, da confrontare con la parola di riferimento **(r)**, il programma scrive su standard output una sequenza di **k** caratteri fatta nella seguente maniera.  
 *( p[1], ... p[k] caratteri della parola **p**, r[1], ... r[k] caratteri di **r**, e con res[1], ... res[k] caratteri della sequenza stampata )*
 
-* Per ogni 1 ≤ **i** ≤ **k**, si ha che
+Per ogni 1 ≤ **i** ≤ **k**, si ha che
 * res[**i**] è il carattere **+** se l'i-esimo carattere di **p** è uguale all'i-esimo carattere di **r** .  
 cioè se vale che p[**i**] = r[**i**], quindi p[**i**] è "in posizione corretta"
 * res[**i**] è il carattere **/** se l'i-esimo carattere di **p** non compare da nessuna parte in **r** .
