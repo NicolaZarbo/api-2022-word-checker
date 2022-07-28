@@ -1,4 +1,7 @@
 # api-2022-word-checker
+
+[link sottoposizioni](https://dum-e.deib.polimi.it/)
+
 ## TOC
 
 - [WordChecker](#wordchecker)
