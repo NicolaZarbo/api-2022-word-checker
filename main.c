@@ -1,131 +1,369 @@
 #include <string.h>
+#include <stdbool.h>
 #include "stdio.h"
 #include "stdlib.h"
 
+#define FROMFILE 1
+#define MAX_LENGTH 1000
+#define INPUT fp
+
+
+
+
+void salvaInMemoria(char *word);
+void nuovaPartita();
+char* ordinaStringa(char* word);
+int leggiParolaInArrivo();
+int isNuovaPartita(char*cmd);
+void aggiungiAmmissibili();
+
+int posOfLetterInReferences(char i);
+
+typedef struct mascheraOfPos{
+    char sureValue;
+    char* notAppear;//fixme make this int and use a map char to int related to this alphabet
+}posMask;
+typedef struct charInfo{
+    int appears;
+    int isMax;//fixme optimise
+    char letter;
+}charInfo;
+typedef struct megaMask{
+    posMask* ofPos;
+    charInfo* ofChars;
+}megaMask;
+typedef struct refInfo{
+    char* appearing;
+    int* numberOfApp;
+    int nUniche;
+} refInfo;
+
+megaMask totalMask;
+int quant;
+char* stringhe[20000];
 char* ref;
 char* orderedRef;
 int k;
 int n;
+FILE* fp;
+char *parolaConfronto;
+refInfo references;
 
-void salvaInMemoria(char *word);
-int nuovaPartita(char* word);
-char* ordinaStringa(char* word);
-int leggiParoleInArrivo();
-int isNuovaPartita(char*cmd);
-void aggiungiAmmissibili();
+
+
+
+void  getString(char* toWhere){
+    if(FROMFILE>0){
+        fgets(toWhere, 1024, fp);
+    }else{
+        fgets(toWhere, 1024, stdin);
+    }
+}
+int stampaFiltrate(){
+    //todo confronta con "stampa_filtrate" e return 0 se non corretto
+
+    //todo trova tutte le parale che rispettano le condizioni
+}
+void* eseguiComando(){
+    char *buf = NULL;//legge il comando da eseguire,15 -> lettere max comando fixme
+    getString(buf);
+    void *fnPointer;
+    printf("%s", buf );
+    if(strcmp("inserisci_inizio", buf)==0){
+        fnPointer=&aggiungiAmmissibili;
+    }
+    if(strcmp("stampa_filtrate",buf)==0) {
+        fnPointer=&stampaFiltrate;
+    }
+    if(strcmp("nuova_partita",buf)==0) {
+        fnPointer=&nuovaPartita;
+    }
+    return fnPointer;//fixme dare delle funzioni in prim ordine
+
+}
+
+void addWords(){
+    char read;
+    read = (char)getc(INPUT);//lookout
+    while (read!='+'){
+        char word[k];
+        for (int i = 1; i < k; ++i) {
+            word[i]=read;
+            read = (char)getc(INPUT);
+        }
+        salvaInMemoria(word);
+        read = (char)getc(INPUT);
+    }
+     eseguiComando();
+   // printf("%s", input );//fixme , controlla comando
+}
 
 int main(){
-    k= getc(stdin);
+    if(FROMFILE>0){
+        if ((fp = fopen("C:/Users/User/CLionProjects/api-2022-word-checker/open_testcases/insert.txt", "r")) == NULL){
+            printf("File cannot open");
+            exit(1);
+        }
+    }
     aggiungiAmmissibili();
-    char buf[10];
-    char* cmd=fgets(buf,12,stdin);
-    if(nuovaPartita(cmd)!=1)
-        return -1;
-    //while{ leggo altri comandi }
+    char input[12];
+    getString(input);
+    k= atoi(input);
+    addWords();
+    while (1>0){}// finché puo leggere
+
+
 }
-int nuovaPartita(char* word){
-    if(strcmp(word, "nuova_partita")!=0)//fixme is strcmp ok?
-        return -1;
+void createBitArray(){
+    unsigned char bitArray;//8 bit array
+    bitArray=0;
+}
+void orderString(char* str, char* buf){//todo test
+    char sw;
+
+    buf=str;
+    for (int i = 0; i < k; ++i){
+        for (int j = i + 1; j < k; ++j){
+            if (buf[i] > buf[j]){
+                sw = buf[i];
+                buf[i] = buf[j];
+                buf[j] = sw;
+            }
+        }
+    }
+}
+void initMegaMask(){
+    posMask posMaschera[k];
+    for (int i = 0; i < k; ++i) {
+        char initAr[54];//fixme make of bits
+        posMaschera[i].notAppear=initAr;
+        posMaschera[i].sureValue=0;
+    }
+    totalMask.ofPos=posMaschera;
+    char x=orderedRef[0];
+    int cc=1;
+    char letSing[k];
+    letSing[0]=x;
+    int nApp[k];
+    nApp[0]=1;
+    for (int i = 1; i < k; ++i) {
+        if(orderedRef[i]!=x){
+            cc++;
+            x=orderedRef[i];
+            letSing[cc]=x;
+            nApp[cc]=1;
+        }else{
+            nApp[cc]++;
+        }
+    }
+    references.nUniche=cc;
+    references.appearing=letSing;
+    references.numberOfApp=nApp;//fixme trim arrays to cc length
+    charInfo arrInfo[cc];
+    for (int i = 0; i < cc; ++i) {
+        arrInfo[i].appears=0;
+        arrInfo[i].letter=letSing[i];
+        arrInfo[i].isMax=0;
+    }
+    totalMask.ofChars=arrInfo;
+}
+void nuovaPartita(){
     //todo
     char buf[k];
-    ref= fgets(buf,k,stdin);
-    orderedRef=ordinaStringa(ref);
     n=getc(stdin);
+    ref= fgets(buf,k,stdin);
+    orderString(ref,orderedRef);
+    initMegaMask();
     int i=0;
     while(i<n){
-        i+=leggiParoleInArrivo();
+        i+= leggiParolaInArrivo();
     }
-    return 1;
 }
-char* ordinaStringa(char* word){
-    char* res=(char*) malloc(k);
-    //todo ref ordinata su res
-    return res;
+bool accConfrontoLettera(char maskMode,char let1,char let2){
+    if(maskMode=='+'){
+        return let1==let2;
+    }
+    return let1!=let2;
 }
-void trovaAmmissibiliCompatibili(char*  maschera){
+
+
+bool contieneAlmenoNecessarie(char *parola, int* infoSt){
+
+    char presenti[references.nUniche];
+    for (int i = 0; i < references.nUniche; ++i) {
+        presenti[i]=0;
+    }
+
+    for (int i = 0; i < k; ++i) {
+        int pos=posOfLetterInReferences(parola[i]);
+        if(pos>=0){
+            presenti[pos]++;
+        }
+
+    }
+    for (int i = 0; i < references.nUniche; ++i) {
+        if(infoSt[i]!=presenti[i])
+            return false;
+    }
+    return true;
+}
+bool contieneCaratteriNonPresenti(char* parola, char* nonPresenti, int quanteNP){
+    for (int i = 0; i < k; ++i) {
+        for (int j = 0; j < quanteNP; ++j) {
+            if(parola[i]==nonPresenti[j])
+                return true;
+        }
+    }
+    return false;
+}
+
+char* ammissibili[2000];
+int ammesse;
+void trovaAmmissibiliCompatibili(char  maschera[], char* parola,int* presentiInNumero, char* nonPresenti, int nNonPresenti){
+    //draft senza ottimizzazioni
+
+    for (int i = 0; i < quant; ++i) {
+        char* stringa=stringhe[i];
+        bool ammissibile=true;
+        for (int j = 0; j < k; ++j) {
+            if(!accConfrontoLettera(maschera[j],parola[j],stringa[j]))
+                ammissibile=false;
+        }
+        if(ammissibile) {
+            if (!contieneAlmenoNecessarie(stringa, presentiInNumero))
+                ammissibile = false;
+        }
+        if(ammissibile) {
+            if (contieneCaratteriNonPresenti(stringa, nonPresenti, nNonPresenti))
+                ammissibile = false;
+        }
+        if(ammissibile){
+            ammissibili[ammesse]=stringa;
+        }
+
+    }
+
+
     //todo applica una maschera a tutti gli ammissibili per filtrarli
     // la parola testata viene messa in una lista
     // viene salvata la grandezza della lista dei filtrati e usati
 }
 
 
-int letteraPresente(char  lettera){//1 presente ; 0 no
-        //todo se presente nella parola 1 else 0
-}
-void stampaMaschera(char* maschera){
-    //todo stampa la maschera, se legge diverso da / o | stampa +
-    // poi stampa il numero di ammissibili compatibili
-}
-void confronto(char* parola){
-    char maschera[k];
-    for(int i =0; i<k; i++){
-        if(ref[i]==parola[i])
-            maschera[i]=parola[i];
-        else {
-            if(letteraPresente(parola[i])==1)
-                maschera[i]='|';
-            else
-                maschera[i]='/';
+
+
+int presenzeInRef(char lettera){
+    for (int i = 0; i < references.nUniche; ++i) {
+        if(references.appearing[i]==lettera){
+            return references.numberOfApp[i];
         }
     }
-    trovaAmmissibiliCompatibili(maschera);
-    stampaMaschera(maschera);
+    return 0;
+}
+int posOfLetterInReferences(char lettera){
+    for (int i = 0; i < references.nUniche; ++i) {
+        if(references.appearing[i]==lettera){
+            return i;
+        }
+    }
+    return -1;
 }
 
-int stampaFiltrate(){
-    //todo confronta con "stampa_filtrate" e return 0 se non corretto
 
-    //todo trova tutte le parale che rispettano le condizioni
+/**
+ * crea nuova maschera e aggiorna quella completa
+ * @param parola parola da confrontare con ref
+ */
+void confronto(char* parola){
+    char maschera[k];
+    int presenti[references.nUniche];
+    char nonPresenti[k];
+    for (int i = 0; i < references.nUniche; ++i) {
+        presenti[i]=0;
+    }
+
+    int nNP=0;
+    for(int i=0;i<k;i++){
+        nonPresenti[i]='0';
+        int pos= posOfLetterInReferences(parola[i]);
+        if(parola[i]==ref[i]){
+            maschera[i]='+';
+            presenti[pos]++;
+        }else if(pos==-1){
+            nonPresenti[nNP]=parola[i];
+            nNP++;
+        }
+    }
+    for(int i =0; i<k; i++){
+        int prs=presenzeInRef(parola[i]);
+        if(prs>0){
+            int pos= posOfLetterInReferences(parola[i]);
+            if(parola[i]!=ref[i]) {
+                presenti[pos]++;
+                if (prs >= presenti[pos])
+                    maschera[i] = '|';
+                else maschera[i] = '/';
+            }
+        }else{
+            maschera[i]='/';
+        }
+    }
+    printf("%s",maschera);
+    trovaAmmissibiliCompatibili(maschera,parola,presenti,nonPresenti,nNP);
 }
+
+
 
 int isInserisciInizio(char* cmd){
     aggiungiAmmissibili();
     //todo leggi inserisci fine, oppure no lmao
-
 }
 void aggiungiAmmissibili(){
     char word[k];
-    int bool=1;
+    int bo=1;
+
     do{
-        word[0]= getc(stdin);
+        word[0]= getc(INPUT);
         if(word[0]=='+')
-            bool=0;
+            bo=0;
         else {
             for (int i = 1; i < k; i++) {
-                word[i] = getc(stdin);
+                word[i] = getc(INPUT);
             }
             salvaInMemoria(word);
         }
-    } while (bool==1);
+    } while (bo==1);
+    getString(word);
+}
+bool ammissibile(char* parola){
+
 }
 
-void eseguiComando(){
-    char buf[15];//legge il comando da eseguire,15 -> lettere max comando
-    char *cmd= fgets(buf,15,stdin);
-   // if(isNuovaPartita(cmd)==1) {
-     //   nuovaPartita(cmd);
-      //  return;
-   // }
-    if(isInserisciInizio(cmd)==1)
-        return;
-    if(stampaFiltrate()==1)
-        return;
-}
 
-int leggiParoleInArrivo(){
+int leggiParolaInArrivo(){
     char word[k];
         word[0]= getc(stdin);
-        if(word[0]=='+')
-            eseguiComando();
-        else {
-            for (int i = 1; i < k; i++) {
-                word[i] = getc(stdin);
-            }
+        if(word[0]=='+'){
+            eseguiComando();//fixme esegui funzione ricevuta da comando
+            return 0;
+        }
+        for (int i = 1; i < k; i++) {
+            word[i] = getc(stdin);
+        }
+        if(ammissibile(word)){
             confronto(word);
         }
+
+
+    return 1;
 }
 
 void salvaInMemoria(char* word){
+    printf("%s", word);
+    stringhe[quant]=word;
+    quant++;
+
+
     //todo trovare una struttura con inserimento decentemente veloce,
     // che possa essere attraversata per intero velocemente, o ,
     // invece dell0ultima proprietà tenere dei puntatori
