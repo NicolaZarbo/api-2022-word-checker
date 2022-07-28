@@ -7,7 +7,7 @@
 - [WordChecker](#wordchecker)
   - [Partenza programma](#partenza-programma)
   - [Nuova partita](#nuova-partita)
-  - [Nuove parole ammissibili](#nuove-parole-ammissibili)
+  - [Nuove parole compatibili](#nuove-parole-compatibili)
   - [Confronto parole](#confronto-parole)
   - [Fine partita](#fine-partita)
   - [Vincoli appresi da confronti](#vincoli-appresi-da-confronti)
@@ -34,7 +34,7 @@ caratteri alfabetici minuscoli (a-z) o maiuscoli (A-Z), cifre numeriche
 *Più precisamente, il sistema legge:*
 * un valore **k**, che indica la lunghezza delle parole
 * una sequenza *(di lunghezza arbitraria)* di parole, ognuna di lunghezza **k**, che
-costituisce l'insieme delle parole ammissibili 
+costituisce l'insieme delle parole compatibili 
    
      
 Si dia pure per scontato che la sequenza di parole non contenga duplicati
@@ -47,7 +47,7 @@ A quel punto, viene letta da standard input una sequenza di "partite" in cui l'i
  Le sequenze di stringhe in input per ogni partita ( successive al comando
 **+nuova_partita** ) sono fatte nel seguente modo:
 * parola di riferimento (di lunghezza **k** caratteri)  
-(si assuma che la parola di riferimento appartenga all'insieme di parole ammissibili)
+(si assuma che la parola di riferimento appartenga all'insieme di parole compatibili)
 * numero **n** massimo di parole da confrontare con la parola di riferimento
 * sequenza di parole (ognuna di **k** caratteri) da confrontare con la parola di riferimento
 
@@ -56,13 +56,13 @@ A quel punto, viene letta da standard input una sequenza di "partite" in cui l'i
 
 -----
 
-## Nuove parole ammissibili 
+## Nuove parole compatibili 
  Inoltre, sia durante una partita, che tra una partita e l'altra, possono comparire i
 comandi **+inserisci_inizio** e **+inserisci_fine** che racchiudono tra di loro una
-sequenza di nuove parole da aggiungere all'insieme delle parole ammissibili
+sequenza di nuove parole da aggiungere all'insieme delle parole compatibili
 * le parole aggiunte sono anch'esse di lunghezza **k**, e si dà sempre per scontato che non ci
 siano parole duplicate (neanche rispetto alle parole già presenti nell'insieme di quelle
-ammissibili)
+compatibili)
 
 -----
 
@@ -111,12 +111,12 @@ seconda è p, e la terza è l'output res)*
 
 
 * Se da standard input viene letta una parola che non appartiene all'insieme
-di quelle ammissibili, il programma scrive su standard output la stringa **not_exists**.
+di quelle compatibili, il programma scrive su standard output la stringa **not_exists**.
 * Se invece viene letta la parola **r** (cioè se **p** = **r**), allora il programma scrive **ok** *(senza stampare il risultato dettagliato del confronto)* e la partita termina.
-* Se, dopo avere letto **n** parole ammissibili (con **n**, si ricordi, numero
+* Se, dopo avere letto **n** parole compatibili (con **n**, si ricordi, numero
 massimo di parole da confrontare con **r**), nessuna di queste era uguale a **r**, il programma scrive **ko** (dopo avere stampato il risultato del confronto dell'ultima parola), e la partita termina.  
 * Inoltre, dopo ogni confronto, il programma deve stampare in output il numero di parole
-ammissibili ancora compatibili con i vincoli appresi (tranne nel caso in cui l'esito del
+compatibili ancora compatibili con i vincoli appresi (tranne nel caso in cui l'esito del
 confronto sia **not_exists**) 
 
 
@@ -125,7 +125,7 @@ confronto sia **not_exists**)
 ## Fine partita
 Dopo che la partita è finita:
 * Non ci possono essere altre parole da confrontare (ma ci potrebbe essere
-l'inserimento di nuove parole ammissibili)
+l'inserimento di nuove parole compatibili)
 * Se in input c'è il comando **+nuova_partita**, ha inizio una nuova partita
 
 -----
@@ -169,6 +169,6 @@ Si noti che i vincoli appresi riguardano, per ogni simbolo:
 ## Stampa filtrate
 Quando, durante una partita, da input si legge il comando **+stampa_filtrate**, il
 programma deve produrre in output, in ordine lessicografico, l'insieme delle parole
-ammissibili che sono compatibili con i vincoli appresi fino a quel momento nella partita,
+compatibili che sono compatibili con i vincoli appresi fino a quel momento nella partita,
 scritte una per riga  .
 
