@@ -90,6 +90,7 @@ void leggiParolaPerConfronto(){
 //-------------------memoria
 
 
+
 void aggiornaCompatibili(char  maschera[], char* parola, int* presentiInNumero, char* nonPresenti, int nNonPresenti){
     //draft senza ottimizzazioni
     int dim;
@@ -123,6 +124,7 @@ void aggiornaCompatibili(char  maschera[], char* parola, int* presentiInNumero, 
     }
 
 }
+
 /*
 void addWords(){
     char read;
@@ -219,8 +221,11 @@ void orderString(char* str, char* buf){//todo test
         }
     }
 }
-void initMegaMask(){
-    posMask posMaschera[k];
+/**
+ * inizializza la megaMask e references
+ */
+void initPartita(){
+    posMask posMaschera[k];//todo malloc the space for the structures
     for (int i = 0; i < k; ++i) {
         char initAr[54];//fixme make of bits
         posMaschera[i].notAppear=initAr;
@@ -254,6 +259,7 @@ void initMegaMask(){
     }
     totalMask.ofChars=arrInfo;
 }
+
 
 
 
@@ -316,9 +322,11 @@ void confronto(char* parola){
         if(parola[i]==ref[i]){
             maschera[i]='+';
             presenti[pos]++;
+            totalMask.ofPos[i].sureValue=parola[i];
         }else if(pos==-1){
             nonPresenti[nNP]=parola[i];
             nNP++;
+            totalMask.ofPos[i].notAppear+=parola[i];
         }
     }
     for(int i =0; i<k; i++){
@@ -335,9 +343,23 @@ void confronto(char* parola){
             maschera[i]='/';
         }
     }
+    // aggiornamento maschera partita
+    for (int i = 0; i < references.nUniche; ++i) {
+        totalMask.ofChars[i].letter = references.appearing[i];
+        totalMask.ofChars[i].appears = presenti[i];
+        if (references.numberOfApp[i] == presenti[i]) {
+            totalMask.ofChars[i].isMax = 1;
+        }
+    }
     printf("%s",maschera);
     aggiornaCompatibili(maschera, parola, presenti, nonPresenti, nNP);
 }
+
+
+
+
+
+
 
 
 //------------------comandi
@@ -347,7 +369,8 @@ void nuovaPartita(){
     n=getc(stdin);
     ref= fgets(buf,k,stdin);
     orderString(ref,orderedRef);
-    initMegaMask();
+
+    initPartita();
     confInPartita=0;
     while(confInPartita<n){
         leggiParolaPerConfronto();
@@ -358,9 +381,9 @@ void nuovaPartita(){
 
 
 void stampaFiltrate(){
-    //todo confronta con "stampa_filtrate" e return 0 se non corretto
-
-    //todo trova tutte le parale che rispettano le condizioni
+    for (int i = 0; i < ammesse; ++i) {
+        printf("%s",compatibili[i]);
+    }
 }
 
 void* eseguiComando(){
