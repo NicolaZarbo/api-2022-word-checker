@@ -82,17 +82,10 @@ void  getString(char* toWhere){
 
     printf(" parola   %s\n",toWhere);
 }
-void getKWord(char* toWhere){
-    char xx;
-    for (int i = 0; i < k; ++i) {
-        toWhere = getc(INPUT);
-    }
-    xx = getc(INPUT);
-}
+
 void leggiParolaPerConfronto(){
     whatthedogdoing=1;
     char word[k];
-    int paroleUsate=0;//funny cosa semi ricorsiva
     word[0]= getc(INPUT);
     if(word[0]=='+'){
         void (*esec)()= eseguiComando();//fixme esegui funzione ricevuta da comando
@@ -105,10 +98,10 @@ void leggiParolaPerConfronto(){
     getc(INPUT);
     if(ammissibile(word, headSv)){
         confronto(word);
+        confInPartita++;
     }else{
-        printf("%s\n","not_exist");
+        printf("not_exists\n");
     }
-    confInPartita++;
 }
 
 
@@ -144,6 +137,7 @@ void aggiornaCompatibili( char* parola, int* presentiInNumero, char* nonPresenti
         }
         provenienza=provenienza->successivo;
     }
+    printf("%d \n",ammesse);
 
 }
 
@@ -177,13 +171,15 @@ void aggiungiAmmissibili(){
         else{
             bo=0;
         }
-    } while (bo==1);
+    } while (bo==1);//fixme possono apparire comandi diversi da inserisci_fine?????????
     void (*esec)()= eseguiComando();
     esec();
 }
 //controlla se è presente tra le ammissibili
 bool ammissibile(char* parola, Nodo* nodo){
-    if(strcmp(nodo->stringa,parola)){
+    if(nodo->stringa==NULL)
+        return false;
+    if(strcmp(nodo->stringa,parola)==0){
         return true;
     }
     return ammissibile(parola, nodo->successivo);
@@ -212,6 +208,7 @@ void salvaInCompatibili(char* parola){
     Nodo *nuovo= malloc(sizeof (Nodo));
     char* str= malloc(k*sizeof (char));
     codaComp->stringa=strcpy(str,parola);
+    ammesse++;
     codaComp->successivo=nuovo;
     nuovo->stringa=NULL;
     codaComp=nuovo;
@@ -268,7 +265,6 @@ void initPartita(){
     totalMask->ofPos=posMaschera;
 
     char *letSing= malloc(k+1);
-    letSing[k]='\0';
     letSing[0]=orderedRef[0];
     int cc=0;
     int *nApp= malloc(k*sizeof (int));
@@ -282,10 +278,11 @@ void initPartita(){
             nApp[cc]++;
         }
     }
+    letSing[cc+1]='\0';
     references->nUniche=cc+1;
     references->appearing=letSing;
     references->numberOfApp=nApp;//fixme trim arrays to cc length
-    charInfo arrInfo[cc];
+    charInfo *arrInfo= malloc(sizeof (charInfo)*(cc+1));
     for (int i = 0; i < cc; ++i) {
         arrInfo[i].appears=0;
         arrInfo[i].letter=letSing[i];
@@ -343,11 +340,13 @@ bool contieneCaratteriNonPresenti(char* parola, char* nonPresenti, int quanteNP)
  */
 void confronto(char* parola){
     //char maschera[k];
-    int presenti[references->nUniche];
+    int dime=references->nUniche;
+    int presenti[dime];
     char nonPresenti[k];
     for (int i = 0; i < references->nUniche; ++i) {
         presenti[i]=0;
     }
+    int corrette=0;
 
     int nNP=0;
     for(int i=0;i<k;i++){
@@ -356,6 +355,7 @@ void confronto(char* parola){
         if(parola[i]==ref[i]){
             mascheraAt[i]='+';
             presenti[pos]++;
+            corrette++;
             totalMask->ofPos[i].sureValue=parola[i];
         }else if(pos==-1){
             nonPresenti[nNP]=parola[i];
@@ -363,30 +363,40 @@ void confronto(char* parola){
             totalMask->ofPos[i].notAppear+=parola[i];
         }
     }
-    for(int i =0; i<k; i++){
-        int prs=presenzeInRef(parola[i]);
-        if(prs>0){
-            int pos= posOfLetterInReferences(parola[i]);
-            if(parola[i]!=ref[i]) {
+    nonPresenti[nNP]='\0';
+    for(int i =0; i<k; i++) {
+        int prs = presenzeInRef(parola[i]);
+        if (prs > 0) {
+            int pos = posOfLetterInReferences(parola[i]);
+            if (parola[i] != ref[i]) {
                 presenti[pos]++;
                 if (prs >= presenti[pos])
                     mascheraAt[i] = '|';
                 else mascheraAt[i] = '/';
             }
-        }else{
-            mascheraAt[i]='/';
+        } else {
+            mascheraAt[i] = '/';
         }
     }
+
     // aggiornamento maschera partita
     for (int i = 0; i < references->nUniche; ++i) {
-        totalMask->ofChars[i].letter = references->appearing[i];
-        totalMask->ofChars[i].appears = presenti[i];
-        if (references->numberOfApp[i] == presenti[i]) {
-            totalMask->ofChars[i].isMax = 1;
+        int pres=presenti[i];
+        charInfo *tmp=&totalMask->ofChars[i];
+        tmp->letter=references->appearing[i];
+        tmp->appears= pres;
+        if (references->numberOfApp[i] == pres) {
+            tmp->isMax = 1;
         }
     }
-    printf("mmmmmmmm %s\n",mascheraAt);
+    if(corrette==k){
+        printf("ok\n");
+        confInPartita=n+1;
+        return;
+    }
+    printf("%s\n",mascheraAt);
     aggiornaCompatibili( parola, presenti, nonPresenti, nNP);
+    //free(presenti);
 }
 
 
@@ -400,6 +410,7 @@ void confronto(char* parola){
 void nuovaPartita(){
     //todo
     char buff[k];
+    ammesse=0;
     char in=getc(INPUT);
     int i=0;
     if(in!='+'){
@@ -409,7 +420,7 @@ void nuovaPartita(){
             i++;
         }while (in != '\n');
     }
-    printf("%s",ref);
+    printf("%s\n",ref);
     in=getc(INPUT);
     i=0;
     if(in!='+') {
@@ -439,6 +450,9 @@ void nuovaPartita(){
     while(confInPartita<n){
         leggiParolaPerConfronto();
     }
+    if(confInPartita==n)
+        printf("ko\n");
+
 }
 
 
@@ -450,7 +464,12 @@ void stampaCompList(Nodo*nodo){
 }
 
 void stampaFiltrate(){
-    stampaCompList(headComp);
+    if(ammesse>0){
+        stampaCompList(headComp);
+    }else
+        stampaCompList(headSv);
+
+
 }
 
 void* eseguiComando(){
@@ -480,7 +499,7 @@ void* eseguiComando(){
 
 int main(){
     if(FROMFILE>0){
-        if ((fp = fopen("C:/Users/User/CLionProjects/api-2022-word-checker/open_testcases/insert.txt", "r")) == NULL){
+        if ((fp = fopen("C:/Users/User/CLionProjects/api-2022-word-checker/open_testcases/test1.txt", "r")) == NULL){
             printf("File cannot open");
             exit(1);
         }
@@ -501,16 +520,22 @@ int main(){
     //stringhe= malloc(1000*sizeof(char )*k );
     headSv= malloc(sizeof (Nodo));
     codaSv=headSv;
-    headComp= headSv;//al momento corrispondono
-    codaComp=headSv;
+    headComp=  malloc(sizeof (Nodo));
+    codaComp=headComp;
     orderedRef= malloc(k+1);//*sizeof(char)
     orderedRef[k]='\0';
     ref=malloc(k+1);//*sizeof(char)
     ref[k]='\0';
     mascheraAt= malloc(k+1);//*sizeof(char)
     mascheraAt[k]='\0';
+
     aggiungiAmmissibili();
-   // while (1>0){}// finché puo leggere
+    char rest= getc(INPUT);
+    while (rest=='+'){
+         void (*ptr)()=eseguiComando();
+         ptr();
+         rest= getc(INPUT);
+    }// finché puo leggere
 
 
 }
