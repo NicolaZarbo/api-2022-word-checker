@@ -51,8 +51,6 @@ void salvaInCompatibili(char *stringa);
 //----------------globali
 megaMask *totalMask;
 int quant;
-//char ** stringhe;
-//char** compatibili;
 int ammesse;
 char* ref;
 char* orderedRef;
@@ -60,7 +58,6 @@ int k;
 int n;
 int confInPartita;//confronti fatti
 FILE* fp;
-char *parolaConfronto;
 refInfo * references;
 int whatthedogdoing;
 Nodo *headSv;
@@ -147,19 +144,9 @@ void aggiungiAmmissibili(){
     int bo=1;
 
     do{
-        /*
-        word[0]= (char)getc(INPUT);
-        if(word[0]=='+')
-            bo=0;
-        else {
-            for (int i = 1; i < k; i++) {
-                word[i] =(char) getc(INPUT);
-            }
-            */
-        //getString(word);
+
         int i=0;
         char in=getc(INPUT);
-        //word[0]=in;
         if(in!='+') {
             do {
                 word[i] = in;
@@ -201,7 +188,7 @@ void salvaInMemoria(char* word){//con lista
     // invece dell0ultima proprietà tenere dei puntatori
     // alle parole ammesse
 
-    //dopo il primo giro di ammissibilità controllare sempre tra lista di parole compatibili
+
 }
 
 void salvaInCompatibili(char* parola){
@@ -396,7 +383,7 @@ void confronto(char* parola){
     }
     printf("%s\n",mascheraAt);
     aggiornaCompatibili( parola, presenti, nonPresenti, nNP);
-    //free(presenti);
+
 }
 
 
@@ -431,7 +418,6 @@ void nuovaPartita(){
         }while (in != '\n' );
     }
     n = atoi(buff);
-    //orderString(ref,orderedRef);
     char sw;
 
     orderedRef= strcpy(orderedRef,ref);
@@ -468,8 +454,6 @@ void stampaFiltrate(){
         stampaCompList(headComp);
     }else
         stampaCompList(headSv);
-
-
 }
 
 void* eseguiComando(){
@@ -505,9 +489,7 @@ int main(){
         }
     }
 
-    //aggiungiAmmissibili();
     char input[5];
-    //getString(input);
     char in=getc(INPUT);
     int i=0;
     while(in!='\n' && in!='+'){
@@ -517,16 +499,15 @@ int main(){
     }
 
     k= atoi(input);
-    //stringhe= malloc(1000*sizeof(char )*k );
     headSv= malloc(sizeof (Nodo));
     codaSv=headSv;
     headComp=  malloc(sizeof (Nodo));
     codaComp=headComp;
-    orderedRef= malloc(k+1);//*sizeof(char)
+    orderedRef= malloc(k+1);
     orderedRef[k]='\0';
-    ref=malloc(k+1);//*sizeof(char)
+    ref=malloc(k+1);
     ref[k]='\0';
-    mascheraAt= malloc(k+1);//*sizeof(char)
+    mascheraAt= malloc(k+1);
     mascheraAt[k]='\0';
 
     aggiungiAmmissibili();
@@ -535,8 +516,6 @@ int main(){
          void (*ptr)()=eseguiComando();
          ptr();
          rest= getc(INPUT);
-    }// finché puo leggere
-
-
+    }
 }
 
