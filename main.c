@@ -102,6 +102,201 @@ void leggiParolaPerConfronto(){
 }
 
 
+
+
+//-----------------------------------------------------------------------------RB Tree
+
+typedef struct nodoAlbero{
+    bool isBlack;
+    struct nodoAlbero* leftSon;
+    struct nodoAlbero* rightSon;
+    struct nodoAlbero* father;
+    int chiave;//£ parola[i]*64^i;
+}TreeNode;
+
+TreeNode *treeHead;
+void ruotaSX(TreeNode *nodo){
+    TreeNode *oldFather=nodo->father;
+    oldFather->rightSon=nodo->leftSon;
+    if(oldFather->father==NULL){
+        nodo->father=NULL;
+        oldFather->father=nodo;
+    }else if(oldFather->father->leftSon==oldFather){
+        oldFather->father->leftSon=nodo;
+    } else{
+        oldFather->father->rightSon=nodo;
+    }
+    oldFather->father=nodo;
+    nodo->leftSon=oldFather;
+}
+void ruotaDX(TreeNode *nodo){
+    TreeNode *oldFather=nodo->father;
+    oldFather->leftSon=nodo->rightSon;
+    if(oldFather->father==NULL){
+        nodo->father=NULL;
+        oldFather->father=nodo;
+    }else if(oldFather->father->leftSon==oldFather){
+        oldFather->father->leftSon=nodo;
+    } else{
+        oldFather->father->rightSon=nodo;
+    }
+    oldFather->father=nodo;
+    nodo->rightSon=oldFather;
+}
+
+void ruotaDxSx(TreeNode *nodo){
+    ruotaDX(nodo);
+    ruotaSX(nodo);
+}
+void ruotaSxDx(TreeNode *nodo){
+    ruotaSX(nodo);
+    ruotaDX(nodo);
+}
+void scendiDaRootInsert(TreeNode *nuNodo, TreeNode *nodo){
+    if(nuNodo->chiave>nodo->chiave){
+        if(nodo->rightSon!=NULL) {
+            scendiDaRootInsert(nuNodo, nodo->rightSon);
+            return;
+        }
+        nodo->rightSon=nuNodo;
+    } else{
+        if(nodo->leftSon!=NULL) {
+            scendiDaRootInsert(nuNodo, nodo->leftSon);
+            return;
+        }
+        nodo->leftSon=nuNodo;
+    }
+    nuNodo->father=nodo;
+    nuNodo->rightSon=NULL;
+    nuNodo->leftSon= NULL;
+
+}
+void aggiungiNodo(int key){
+    TreeNode *nuNodo= malloc(sizeof (TreeNode));
+    nuNodo->chiave=key;
+    nuNodo->isBlack=false;
+
+    if(treeHead->chiave==0){
+        treeHead = nuNodo;
+        nuNodo->father=NULL;
+        nuNodo->isBlack=true;
+    } else scendiDaRootInsert(nuNodo,treeHead);
+}
+
+void sistemaInserimento(TreeNode* nuNodo){
+    while (!nuNodo->father->isBlack){
+        TreeNode * nonno=nuNodo->father->father;
+        if(nonno->leftSon==nuNodo->father) {
+            if (!nonno->rightSon->isBlack) {
+                nonno->rightSon->isBlack = true;
+                nonno->leftSon->isBlack = true;
+                nonno->isBlack = false;
+                nuNodo=nonno;//assegno nonno a nuNodo????
+
+            } else{
+                if (nuNodo == nuNodo->father->rightSon) {
+                    nuNodo=nuNodo->father;//assegna padre a nuNodo????
+                    ruotaSX(nuNodo);
+                }
+                nonno->isBlack = false;
+                nuNodo->father->isBlack = true;
+                ruotaDX(nonno);
+            }
+        } else{
+            if(!nonno->leftSon->isBlack){
+                nonno->rightSon->isBlack = true;
+                nonno->leftSon->isBlack = true;
+                nonno->isBlack = false;
+                nuNodo=nonno;//assegno nonno a nuNodo????
+            } else{
+                if(nuNodo == nuNodo->father->leftSon) {
+                    nuNodo=nuNodo->father;//assegna padre a nuNodo????
+                    ruotaDX(nuNodo);
+            }
+                nonno->isBlack = false;
+                nuNodo->father->isBlack = true;
+                ruotaSX(nonno);
+            }
+        }
+    }
+}
+TreeNode * minOfSubTree(TreeNode* nodo) {
+    if(nodo->leftSon==NULL)
+        return nodo;
+    return minOfSubTree(nodo->leftSon);
+}
+void sistemaCancellazione(TreeNode* nodoSost){
+
+}
+//per contrarre i compatibili
+void cancellazioneNodoAlbero(TreeNode* nodo){//fixme rivedere
+    bool wasBlack=nodo->isBlack;
+    TreeNode *nodoSos;
+    if(nodo->leftSon==NULL){
+        nodoSos=nodo->rightSon;// fixme e se entrambi sono null????
+        nodoSos->father=nodo->father;
+        if(nodo->father->leftSon==nodo)
+            nodo->father->leftSon=nodoSos;
+        else nodo->father->rightSon=nodoSos;
+    }else if(nodo->rightSon==NULL) {
+            nodoSos=nodo->leftSon;
+            nodoSos->father=nodo->father;
+            if (nodo->father->leftSon == nodo)
+                nodo->father->leftSon = nodoSos;
+            else nodo->father->rightSon = nodoSos;
+
+
+    } else{
+            TreeNode *min= minOfSubTree(nodo->rightSon);
+            wasBlack=min->isBlack;
+            TreeNode *temp=min->rightSon;
+            if(min==nodo->leftSon||min==nodo->rightSon){
+                temp->father=min;
+            }else{
+                min->father->leftSon=min->rightSon;
+                min->rightSon->father=min->father;
+
+
+                nodo->isBlack=wasBlack;
+                if (nodo->father->leftSon == nodo)
+                    nodo->father->leftSon = min;
+                else nodo->father->rightSon = min;
+                min->father=nodo->father;
+            }
+            nodoSos=min;
+    }
+    nodoSos->isBlack=wasBlack;//???corretto?
+    if(wasBlack)
+        sistemaCancellazione(nodoSos);
+}
+
+
+void attraversamentoOrdinato(){
+
+}
+
+
+
+
+void testAlbero(){
+    treeHead= malloc(sizeof (TreeNode));
+    aggiungiNodo(232323);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //-------------------memoria
 
 
