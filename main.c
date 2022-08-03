@@ -295,13 +295,19 @@ void cancellazioneNodoAlbero(TreeNode* nodo){
     TreeNode *nodoSos;
     if(nodo->leftSon==NULL){
         nodoSos=nodo->rightSon;// fixme e se entrambi sono null????
-        nodoSos->father=nodo->father;
+        if(nodoSos!=NULL){
+            nodoSos->father=nodo->father;
+        }
+
         if(nodo->father->leftSon==nodo)
             nodo->father->leftSon=nodoSos;
         else nodo->father->rightSon=nodoSos;
     }else if(nodo->rightSon==NULL) {
-            nodoSos=nodo->leftSon;
+        nodoSos=nodo->leftSon;
+        if(nodoSos!=NULL){
             nodoSos->father=nodo->father;
+        }
+
             if (nodo->father->leftSon == nodo)
                 nodo->father->leftSon = nodoSos;
             else nodo->father->rightSon = nodoSos;
@@ -325,6 +331,10 @@ void cancellazioneNodoAlbero(TreeNode* nodo){
                 min->father=nodo->father;
             }
             nodoSos=min;
+    }
+    if(nodoSos==NULL){
+        free(nodo);
+        return;
     }
     nodoSos->isBlack=wasBlack;//???corretto?
     if(wasBlack)
@@ -359,7 +369,7 @@ void chiaveToStringa(int chiave, char* target){
         esp=esp/64;//occhio a 1/64
     }
 }
-
+//x stampa filtrate
 void attraversamentoOrdinato(TreeNode* vertice){
     if(vertice==NULL){
         return;
@@ -372,7 +382,6 @@ void attraversamentoOrdinato(TreeNode* vertice){
     attraversamentoOrdinato(vertice->rightSon);
 
 }//todo scrivere versione per scorrimento in funzione "ammissibile()"
-
 int mappaCharToInt64(char x){
     if(x<91){
         if(x>64)
@@ -393,6 +402,29 @@ int string2chiave(char* stringa){
     }
     return outKey;
 }
+bool pres(int chiave, TreeNode* nodo){
+    if(nodo==NULL)
+        return false;
+    if(nodo->chiave<chiave)
+        return pres(chiave,nodo->rightSon);
+    if(chiave<nodo->chiave)
+        return pres(chiave,nodo->leftSon);
+    else return true;
+}
+bool presenteTraAmmissibili(char* parola){
+    int keyOfParola= string2chiave(parola);
+    return pres(keyOfParola,treeHead);
+}
+TreeNode* trovaNodo(int val, TreeNode* nodo){
+    if(nodo==NULL)
+        return NULL;
+    if(nodo->chiave<val)
+        return trovaNodo(val,nodo->rightSon);
+    if(val<nodo->chiave)
+        return trovaNodo(val,nodo->leftSon);
+    else return nodo;
+}
+
 
 
 
@@ -412,7 +444,9 @@ void testAlbero(){
     aggiungiNodo(val);
     char nuf[6];
     chiaveToStringa(val,nuf);
-    printf("%s\n",nuf);//todo modifica chiave-Stringa
+    attraversamentoOrdinato(treeHead);
+    TreeNode *target= trovaNodo(val,treeHead);
+    cancellazioneNodoAlbero(target);
     attraversamentoOrdinato(treeHead);
 }
 
@@ -569,11 +603,11 @@ void orderString(char* str, char* buf){//todo test
  * inizializza la megaMask e references
  */
 void initPartita(){
-    references= malloc(sizeof (ref));
+    references= malloc(sizeof (ref));//put in main, non fare ogni nuova partita
     totalMask= malloc(sizeof(megaMask));
     posMask* posMaschera= malloc(k*sizeof (posMask));//todo malloc the space for the structures
     for (int i = 0; i < k; ++i) {
-        char initAr[54];//fixme make of bits
+        char initAr[64];//fixme make of bits
         posMaschera[i].notAppear=initAr;
         posMaschera[i].sureValue=0;
     }
