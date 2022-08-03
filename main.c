@@ -115,6 +115,10 @@ typedef struct nodoAlbero{
 }TreeNode;
 
 TreeNode *treeHead;
+TreeNode *testaComp;
+
+
+
 void ruotaSX(TreeNode *nodo){
     TreeNode *oldFather=nodo->father;
     oldFather->rightSon=nodo->leftSon;
@@ -152,37 +156,6 @@ void ruotaSxDx(TreeNode *nodo){
     ruotaSX(nodo);
     ruotaDX(nodo);
 }
-void scendiDaRootInsert(TreeNode *nuNodo, TreeNode *nodo){
-    if(nuNodo->chiave>nodo->chiave){
-        if(nodo->rightSon!=NULL) {
-            scendiDaRootInsert(nuNodo, nodo->rightSon);
-            return;
-        }
-        nodo->rightSon=nuNodo;
-    } else{
-        if(nodo->leftSon!=NULL) {
-            scendiDaRootInsert(nuNodo, nodo->leftSon);
-            return;
-        }
-        nodo->leftSon=nuNodo;
-    }
-    nuNodo->father=nodo;
-    nuNodo->rightSon=NULL;
-    nuNodo->leftSon= NULL;
-
-}
-void aggiungiNodo(int key){
-    TreeNode *nuNodo= malloc(sizeof (TreeNode));
-    nuNodo->chiave=key;
-    nuNodo->isBlack=false;
-
-    if(treeHead->chiave==0){
-        treeHead = nuNodo;
-        nuNodo->father=NULL;
-        nuNodo->isBlack=true;
-    } else scendiDaRootInsert(nuNodo,treeHead);
-}
-
 void sistemaInserimento(TreeNode* nuNodo){
     while (!nuNodo->father->isBlack){
         TreeNode * nonno=nuNodo->father->father;
@@ -192,7 +165,6 @@ void sistemaInserimento(TreeNode* nuNodo){
                 nonno->leftSon->isBlack = true;
                 nonno->isBlack = false;
                 nuNodo=nonno;//assegno nonno a nuNodo????
-
             } else{
                 if (nuNodo == nuNodo->father->rightSon) {
                     nuNodo=nuNodo->father;//assegna padre a nuNodo????
@@ -212,7 +184,7 @@ void sistemaInserimento(TreeNode* nuNodo){
                 if(nuNodo == nuNodo->father->leftSon) {
                     nuNodo=nuNodo->father;//assegna padre a nuNodo????
                     ruotaDX(nuNodo);
-            }
+                }
                 nonno->isBlack = false;
                 nuNodo->father->isBlack = true;
                 ruotaSX(nonno);
@@ -220,16 +192,105 @@ void sistemaInserimento(TreeNode* nuNodo){
         }
     }
 }
+
+void scendiDaRootInsert(TreeNode *nuNodo, TreeNode *nodo){
+    if(nuNodo->chiave>nodo->chiave){
+        if(nodo->rightSon!=NULL) {
+            scendiDaRootInsert(nuNodo, nodo->rightSon);
+            return;
+        }
+        nodo->rightSon=nuNodo;
+    } else{
+        if(nodo->leftSon!=NULL) {
+            scendiDaRootInsert(nuNodo, nodo->leftSon);
+            return;
+        }
+        nodo->leftSon=nuNodo;
+    }
+    nuNodo->father=nodo;
+    nuNodo->rightSon=NULL;
+    nuNodo->leftSon= NULL;
+
+    sistemaInserimento(nuNodo);
+}
+void aggiungiNodo(int key){
+    TreeNode *nuNodo= malloc(sizeof (TreeNode));
+    nuNodo->chiave=key;
+    nuNodo->isBlack=false;
+
+    if(treeHead->chiave==-1){//possibile ottimizzazione, rimuovi questo case?
+        treeHead = nuNodo;
+        nuNodo->father=NULL;
+        nuNodo->isBlack=true;
+        nuNodo->leftSon=NULL;
+        nuNodo->rightSon=NULL;
+    } else scendiDaRootInsert(nuNodo,treeHead);
+}
+
 TreeNode * minOfSubTree(TreeNode* nodo) {
     if(nodo->leftSon==NULL)
         return nodo;
     return minOfSubTree(nodo->leftSon);
 }
-void sistemaCancellazione(TreeNode* nodoSost){
-
+void sistemaCancellazione(TreeNode* nodoSost) {
+    while (nodoSost->father == NULL || !nodoSost->isBlack) {
+        if (nodoSost == nodoSost->father->leftSon) {
+            TreeNode *fratello = nodoSost->father->rightSon;
+            if (!fratello->isBlack) {
+                fratello->isBlack = true;
+                nodoSost->father->isBlack = false;
+                ruotaSX(nodoSost->father);
+                fratello = nodoSost->father->rightSon;
+            }
+            if (fratello->leftSon->isBlack && fratello->rightSon->isBlack) {
+                fratello->isBlack = false;
+                nodoSost = nodoSost->father;
+            } else {
+                if (fratello->rightSon->isBlack) {
+                    fratello->leftSon->isBlack = true;
+                    fratello->isBlack = false;
+                    ruotaDX(fratello);
+                    fratello = nodoSost->father->rightSon;
+                }
+                fratello->isBlack = nodoSost->father->isBlack;
+                nodoSost->father->isBlack = true;
+                fratello->rightSon->isBlack = true;
+                ruotaSX(nodoSost->father);
+                nodoSost->father = NULL;//this is the new root
+                treeHead = nodoSost;
+            }
+        } else {
+            TreeNode *fratello = nodoSost->father->leftSon;
+            if (!fratello->isBlack) {
+                fratello->isBlack = true;
+                nodoSost->father->isBlack = false;
+                ruotaSX(nodoSost->father);
+                fratello = nodoSost->father->leftSon;
+            }
+            if (fratello->rightSon->isBlack && fratello->leftSon->isBlack) {
+                fratello->isBlack = false;
+                nodoSost = nodoSost->father;
+            } else {
+                if (fratello->leftSon->isBlack) {
+                    fratello->rightSon->isBlack = true;
+                    fratello->isBlack = false;
+                    ruotaDX(fratello);
+                    fratello = nodoSost->father->leftSon;
+                }
+                fratello->isBlack = nodoSost->father->isBlack;
+                nodoSost->father->isBlack = true;
+                fratello->leftSon->isBlack = true;
+                ruotaSX(nodoSost->father);
+                nodoSost->father = NULL;//this is the new root
+                treeHead = nodoSost;
+            }
+        }
+        nodoSost->isBlack = true;
+    }
 }
 //per contrarre i compatibili
-void cancellazioneNodoAlbero(TreeNode* nodo){//fixme rivedere
+void cancellazioneNodoAlbero(TreeNode* nodo){
+        //fixme rivedere
     bool wasBlack=nodo->isBlack;
     TreeNode *nodoSos;
     if(nodo->leftSon==NULL){
@@ -268,11 +329,69 @@ void cancellazioneNodoAlbero(TreeNode* nodo){//fixme rivedere
     nodoSos->isBlack=wasBlack;//???corretto?
     if(wasBlack)
         sistemaCancellazione(nodoSos);
+    free(nodo);//funzia??
+}
+char mappaInt64ToChar(int val){
+    if(val<26){
+        if(val==0)
+            return 45;
+        return (char)(val+64);
+    }
+    if(val>27)
+        return (char)(val+69);
+    return 95;
+}
+int powerOfKFor(int number){
+    int out=1;
+    for (int i = 0; i < k-1; ++i) {
+        out=out*64;
+    }
+    return out;
+}
+void chiaveToStringa(int chiave, char* target){
+    int key=chiave;
+    int esp= powerOfKFor(64);
+    int res;
+    for (int i = 0; i < k; ++i) {
+        res=key/(esp);
+        target[k-1-i]= mappaInt64ToChar(res);
+        key-=res*esp;
+        esp=esp/64;//occhio a 1/64
+    }
 }
 
+void attraversamentoOrdinato(TreeNode* vertice){
+    if(vertice==NULL){
+        return;
+    }
+    attraversamentoOrdinato(vertice->leftSon);
+    char nuf[6];
+    chiaveToStringa((vertice->chiave),nuf);
+    printf("%s\n",nuf);//todo modifica chiave-Stringa
 
-void attraversamentoOrdinato(){
+    attraversamentoOrdinato(vertice->rightSon);
 
+}//todo scrivere versione per scorrimento in funzione "ammissibile()"
+
+int mappaCharToInt64(char x){
+    if(x<91){
+        if(x>64)
+            return x-64;
+        return 0;
+    }
+    if(x>96)
+        return x-69;
+    return x-68;
+}
+//traduce stringa in chiave, se k=5 e sizeof(int) è 4 byte => basta un int a parola!
+int string2chiave(char* stringa){
+    int outKey=0;
+    int esp=1;
+    for (int i = 0; i < k; ++i) {
+        outKey+=mappaCharToInt64(stringa[i])*esp;
+        esp=esp*64;
+    }
+    return outKey;
 }
 
 
@@ -280,7 +399,21 @@ void attraversamentoOrdinato(){
 
 void testAlbero(){
     treeHead= malloc(sizeof (TreeNode));
-    aggiungiNodo(232323);
+    treeHead->chiave=-1;
+    treeHead->leftSon=NULL;
+    treeHead->rightSon=NULL;
+    k=5;
+    char* st= malloc(5*sizeof (char ));
+    strcpy(st,"pigna");
+    int val= string2chiave(st);
+    aggiungiNodo(val);
+    strcpy(st,"Bigge");
+    val= string2chiave(st);
+    aggiungiNodo(val);
+    char nuf[6];
+    chiaveToStringa(val,nuf);
+    printf("%s\n",nuf);//todo modifica chiave-Stringa
+    attraversamentoOrdinato(treeHead);
 }
 
 
@@ -677,6 +810,8 @@ void* eseguiComando(){
 }
 
 int main(){
+    testAlbero();
+    /*
     if(FROMFILE>0){
         if ((fp = fopen("C:/Users/User/CLionProjects/api-2022-word-checker/open_testcases/test1.txt", "r")) == NULL){
             printf("File cannot open");
@@ -712,5 +847,6 @@ int main(){
          ptr();
          rest= getc(INPUT);
     }
+     */
 }
 
