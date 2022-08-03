@@ -32,8 +32,8 @@ caratteri alfabetici minuscoli (a-z) o maiuscoli (A-Z), cifre numeriche
  Il sistema legge da standard input una sequenza di informazioni e istruzioni, e produce delle stringhe in output a seconda dei casi.  
 
 *Più precisamente, il sistema legge:*
-* un valore **k**, che indica la lunghezza delle parole
-* una sequenza *(di lunghezza arbitraria)* di parole, ognuna di lunghezza **k**, che
+* un valore **wordLen**, che indica la lunghezza delle parole
+* una sequenza *(di lunghezza arbitraria)* di parole, ognuna di lunghezza **wordLen**, che
 costituisce l'insieme delle parole compatibili 
    
      
@@ -46,10 +46,10 @@ A quel punto, viene letta da standard input una sequenza di "partite" in cui l'i
 ## Nuova partita
  Le sequenze di stringhe in input per ogni partita ( successive al comando
 **+nuova_partita** ) sono fatte nel seguente modo:
-* parola di riferimento (di lunghezza **k** caratteri)  
+* parola di riferimento (di lunghezza **wordLen** caratteri)  
 (si assuma che la parola di riferimento appartenga all'insieme di parole compatibili)
-* numero **n** massimo di parole da confrontare con la parola di riferimento
-* sequenza di parole (ognuna di **k** caratteri) da confrontare con la parola di riferimento
+* numero **tentativi** massimo di parole da confrontare con la parola di riferimento
+* sequenza di parole (ognuna di **wordLen** caratteri) da confrontare con la parola di riferimento
 
  Ogni tanto, nella sequenza di stringhe in input, può comparire il comando
 **+stampa_filtrate**, il cui effetto è spiegato in seguito   
@@ -60,17 +60,17 @@ A quel punto, viene letta da standard input una sequenza di "partite" in cui l'i
  Inoltre, sia durante una partita, che tra una partita e l'altra, possono comparire i
 comandi **+inserisci_inizio** e **+inserisci_fine** che racchiudono tra di loro una
 sequenza di nuove parole da aggiungere all'insieme delle parole compatibili
-* le parole aggiunte sono anch'esse di lunghezza **k**, e si dà sempre per scontato che non ci
+* le parole aggiunte sono anch'esse di lunghezza **wordLen**, e si dà sempre per scontato che non ci
 siano parole duplicate (neanche rispetto alle parole già presenti nell'insieme di quelle
 compatibili)
 
 -----
 
 ## Confronto parole
- Per ogni parola letta **(p)**, da confrontare con la parola di riferimento **(r)**, il programma scrive su standard output una sequenza di **k** caratteri fatta nella seguente maniera.  
-*( p[1], ... p[k] caratteri della parola **p**, r[1], ... r[k] caratteri di **r**, e con res[1], ... res[k] caratteri della sequenza stampata )*
+ Per ogni parola letta **(p)**, da confrontare con la parola di riferimento **(r)**, il programma scrive su standard output una sequenza di **wordLen** caratteri fatta nella seguente maniera.  
+*( p[1], ... p[wordLen] caratteri della parola **p**, r[1], ... r[wordLen] caratteri di **r**, e con res[1], ... res[wordLen] caratteri della sequenza stampata )*
 
-Per ogni 1 ≤ **i** ≤ **k**, si ha che
+Per ogni 1 ≤ **i** ≤ **wordLen**, si ha che
 * res[**i**] è il carattere **+** se l'i-esimo carattere di **p** è uguale all'i-esimo carattere di **r** .  
 cioè se vale che p[**i**] = r[**i**], quindi p[**i**] è "in posizione corretta"
 * res[**i**] è il carattere **/** se l'i-esimo carattere di **p** non compare da nessuna parte in **r** .
@@ -113,7 +113,7 @@ seconda è p, e la terza è l'output res)*
 * Se da standard input viene letta una parola che non appartiene all'insieme
 di quelle compatibili, il programma scrive su standard output la stringa **not_exists**.
 * Se invece viene letta la parola **r** (cioè se **p** = **r**), allora il programma scrive **ok** *(senza stampare il risultato dettagliato del confronto)* e la partita termina.
-* Se, dopo avere letto **n** parole compatibili (con **n**, si ricordi, numero
+* Se, dopo avere letto **tentativi** parole compatibili (con **tentativi**, si ricordi, numero
 massimo di parole da confrontare con **r**), nessuna di queste era uguale a **r**, il programma scrive **ko** (dopo avere stampato il risultato del confronto dell'ultima parola), e la partita termina.  
 * Inoltre, dopo ogni confronto, il programma deve stampare in output il numero di parole
 compatibili ancora compatibili con i vincoli appresi (tranne nel caso in cui l'esito del
