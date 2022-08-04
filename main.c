@@ -8,7 +8,7 @@
 
 void salvaAmmissibile(char *word);
 void nuovaPartita();
-void leggiParolaPerConfronto();
+int leggiParolaPerConfronto();
 
 void aggiungiAmmissibili();
 bool accConfrontoLettera(int pos,char let1,char let2);
@@ -46,6 +46,7 @@ void salvaInCompatibili(char *parola);
 
 //----------------globali
 megaMask *totalMask;
+char* parolanodo;
 char* salvaPres;
 char *nonPres;
 int salvate;
@@ -63,28 +64,22 @@ int nPartite;
 
 
 char *wordk;
-void leggiParolaPerConfronto(){
-    wordk[0]= (char)getc(INPUT);
-    if(wordk[0] == EOF){
-        fclose(fp);
-        return;
-
-    }
-    if(wordk[0] == EOF){
-        fclose(fp);
-        return;
-
-    }
-    if(wordk[0] == '+'){
-        void (*esec)()= eseguiComando();//fixme esegui funzione ricevuta da comando
-        esec();
-        return;
-    }
-
-    int i=1;
-
+int leggiParolaPerConfronto(){
+    //wordk[0]= (char)getc(INPUT);
 
     char in=(char ) getc(INPUT);
+    if(in==EOF){
+        *confInPartita=tentativi+20;
+        exit(0);
+    }
+
+    if(in == '+'){
+
+        return 1;
+    }
+    wordk[0]=in;
+    int i=1;
+    in=(char ) getc(INPUT);
     while(in!='\n' && i<wordLen){
         wordk[i]=in;
         i++;
@@ -98,9 +93,13 @@ void leggiParolaPerConfronto(){
     if(presenteTraAmmissibili(wordk) ){
         confronto(wordk);
         *confInPartita=*confInPartita+1;
+        return 2;
     }else{
         printf("not_exists\n");
+        printf("paro: %s\n",wordk);
+        return 0;
     }
+
 }
 
 
@@ -413,7 +412,8 @@ void cancellazioneNodoAlbero(TreeNode* nodo){
     if(wasBlack)
         sistemaCancellazione(nodoSos);
 
-    free(nodo);//funzia??todo come faccio a deallocare, questo incasina tutto
+
+   // free(nodo);//funzia??todo come faccio a deallocare, questo incasina tutto
 
 }
 char mappaInt64ToChar(int val){//todo ri-testare
@@ -445,6 +445,7 @@ void chiaveToStringa(int chiave, char* target){
         if(i != wordLen - 1)
             esp=esp/64;
     }
+    target[wordLen]='\0';
 }
 char* debugKEY(int chiave){
     char* target= malloc(wordLen+1);
@@ -514,6 +515,10 @@ bool presenteTraAmmissibili(char* parola){
     int keyOfParola= string2chiave(parola);
     return pres(keyOfParola,treeHead);
 }
+bool presenteTraComp(char* parola){
+    int keyOfParola= string2chiave(parola);
+    return pres(keyOfParola,testaComp);
+}
 TreeNode* trovaNodo(int val, TreeNode* nodo){
     if(nodo==NULLO)
         return NULLO;
@@ -571,35 +576,39 @@ void testAlbero(){
 
 bool isFromMem;
 void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
-    if(nodo==NULLO)
-        return;
-    if(testaComp==NULLO || testaComp->father!=NULLO)
-        testaComp=NULLO;
 
-    recurAggComp(nodo->leftSon,   nonPresenti, nNonPresenti);
+    chiaveToStringa(nodo->chiave, parolanodo);
+    if(strcmp("asHdd",parolanodo)==0)
+        printf("eccoooooo");
+        //if(testaComp==NULLO || testaComp->father!=NULLO)
+    if(nodo->leftSon!=NULLO)
+        recurAggComp(nodo->leftSon,   nonPresenti, nNonPresenti);
 
-    char stringa[wordLen];
-    stringa[wordLen]='\0';
-    chiaveToStringa(nodo->chiave,stringa);
+    if(nodo->rightSon!=NULLO)
+        recurAggComp(nodo->rightSon,  nonPresenti, nNonPresenti);
+
+    chiaveToStringa(nodo->chiave, parolanodo);
     bool ammissibile=true;
     for (int j = 0; j < wordLen; ++j) {
-        if(!accConfrontoLettera(j,wordk[j],stringa[j])) {
+        if(!accConfrontoLettera(j, wordk[j], parolanodo[j])) {
             ammissibile = false;
             break;
         }
     }
+
     if(ammissibile) {
-        if (!contieneAlmenoNecessarie(stringa))
+        if (!contieneAlmenoNecessarie(parolanodo))
             ammissibile = false;
+        bool xxxxxx=contieneAlmenoNecessarie(parolanodo);
     }
     if(ammissibile) {
-        if (contieneCaratteriNonPresenti(stringa, nonPresenti, nNonPresenti))
+        if (contieneCaratteriNonPresenti(parolanodo, nonPresenti, nNonPresenti))
             ammissibile = false;
     }
     TreeNode *succ=nodo->rightSon;
     //modifica compatibili
     if(ammissibile && isFromMem){
-        salvaInCompatibili(stringa);
+        salvaInCompatibili(parolanodo);
         if(testaComp==NULLO)
             testaComp=NULLO;
         compatibili++;
@@ -607,8 +616,13 @@ void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
         //canc = nodo;//trovaNodo(string2chiave(parola), testaComp);
      //   if (testaComp == nodo )
        //     printf("nodo= testa\n");
+       if(presenteTraComp(parolanodo))
+           printf("");
+       else
+           printf("no\n");
         compatibili--;
         cancellazioneNodoAlbero(nodo);
+        //free(nodo);
         if (compatibili == 0) {
             printf("errore filtri, 0 parole compatibili\n");
             return;
@@ -616,13 +630,11 @@ void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
 
     }
 
-    recurAggComp(succ,  nonPresenti, nNonPresenti);
-
 
 }
 
 
-void aggiornaCompatibili(int nCorrette, char* nonPresenti, int nNonPresenti){
+void aggiornaCompatibili( char* nonPresenti, int nNonPresenti){
     //draft senza ottimizzazioni
     TreeNode *provenienza;
     if(compatibili == 0) {
@@ -632,13 +644,18 @@ void aggiornaCompatibili(int nCorrette, char* nonPresenti, int nNonPresenti){
         provenienza = testaComp;
         isFromMem=false;
     }
-   // char* bic= malloc(wordLen);
-    /*strcpy(bic,"-s9k0");
-    if(strcmp(bic,parola)==0)
-        printf("lol");*/
-    recurAggComp(provenienza ,    nonPresenti, nNonPresenti);
+
+    recurAggComp(provenienza , nonPresenti, nNonPresenti);
     printf("%d \n", compatibili);
 
+}
+bool rispettaTotalMask(){
+    return true;
+}
+void aggiornaCompatibiliNuovo() {//l'ultimo elemento mancante
+    if (rispettaTotalMask()) {
+
+    }
 }
 
 
@@ -649,11 +666,11 @@ void aggiungiAmmissibili(){
     do{
 
         int i=0;
-        char in=getc(INPUT);
+        char in=(char)getc(INPUT);
         if(in!='+') {
             do {
                 word[i] = in;
-                in = getc(INPUT);
+                in = (char)getc(INPUT);
                 i++;
             } while (in != '\n' && i < wordLen);
             salvaAmmissibile(word);
@@ -662,21 +679,18 @@ void aggiungiAmmissibili(){
             bo=0;
         }
     } while (bo==1);//fixme possono apparire comandi diversi da inserisci_fine?????????
-    void (*esec)()= eseguiComando();
-    esec();
+    //legge inserisce_fine
+    char in;
+    do {
+        in =(char) getc(INPUT);
+    } while (in != '\n');
+    //void (*esec)()= eseguiComando();
+    //esec();
 }
 
 
 
-void salvaAmmissibile(char* word){//con lista
-/*    Nodo *nuovo= malloc(sizeof (Nodo));
-    char* str= malloc(wordLen*sizeof (char));
-    codaSv->stringa= strcpy(str,word);
-    salvate++;
-    nuovo->stringa=NULL;
-    codaSv->successivo=nuovo;
-    codaSv=nuovo;
-*/
+void salvaAmmissibile(char* word){
 int chiave= string2chiave(word);
     aggiungiNodo(chiave,treeHead);
     salvate++;
@@ -686,7 +700,6 @@ int chiave= string2chiave(word);
 void salvaInCompatibili(char* parola){
     int chiave=string2chiave(parola);
     aggiungiNodo(chiave,testaComp);
-   // compatibili++;
 
 }
 
@@ -709,6 +722,7 @@ int posOfLetterInReferences(char lettera){
             return i;
         }
     }
+    //printf("badadd");
     return -1;
 }
 
@@ -720,8 +734,6 @@ void initPartita(){
     totalMask= malloc(sizeof(megaMask));
     nonPres= malloc(wordLen+1);
     nonPres[wordLen]='\0';
-    wordk= malloc(wordLen+1);
-    wordk[wordLen]='\0';
     posMask* posMaschera= malloc(wordLen * sizeof (posMask));//todo malloc the space for the structures
     for (int i = 0; i < wordLen; ++i) {
         char *initAr= malloc(64);//fixme make of bits
@@ -749,8 +761,10 @@ void initPartita(){
     references->nUniche=cc+1;
     references->appearing=letSing;
     references->numberOfApp=nApp;
+   // int *isMax= malloc(cc* sizeof(int));
+
     charInfo *arrInfo= malloc(sizeof (charInfo)*(cc+1));
-    for (int i = 0; i < cc; ++i) {
+    for (int i = 0; i < cc+1; ++i) {
         arrInfo[i].appears=0;
         arrInfo[i].letter=letSing[i];
         arrInfo[i].isMax=0;
@@ -791,7 +805,7 @@ void initSuccessivi(){
     letSing[cc+1]='\0';
     references->nUniche=cc+1;
     charInfo *arrInfo=totalMask->ofChars;
-    for (int i = 0; i < cc; ++i) {
+    for (int i = 0; i < cc+1; ++i) {
         arrInfo[i].appears=0;
         arrInfo[i].letter=letSing[i];
         arrInfo[i].isMax=0;
@@ -813,16 +827,15 @@ bool accConfrontoLettera(int pos,char let1,char let2){
     return let1!=let2;
 }
 bool contieneAlmenoNecessarie(const char *parolaDelNodo){
-    bool pres;
     bool ok=true;//todo presenti deve essere un array ordinato come references.uniche
-    int app=0;
+    int app;
     for (int i = 0; i < references->nUniche; ++i) {
-        pres=false;
+        app=0;
         for (int j = 0; j < wordLen; ++j) {
-            if(references->appearing[i] == parolaDelNodo[j])
+            if(references->appearing[i] == parolaDelNodo[j] )
                 app++;
         }
-        if(((app>=totalMask->ofChars[i].appears && !totalMask->ofChars[i].isMax) || (totalMask->ofChars[i].isMax && app==totalMask->ofChars[i].appears)))
+        if(!((app>=totalMask->ofChars[i].appears && totalMask->ofChars[i].isMax==0) || (totalMask->ofChars[i].isMax==1 && app==totalMask->ofChars[i].appears)))
             ok=false;
     }
     return ok;
@@ -849,6 +862,7 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
         presenti[i]=0;
     }
     int corrette=0;
+    //todo controlla maschera agg per "-s9k0"
 
     int nNP=0;
     for(int i=0; i < wordLen; i++){
@@ -857,7 +871,9 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
         if(parola[i] == riferimento[i]){
             mascheraAt[i]='+';
           //  salvaPres[corrette]=parola[i];
-            presenti[pos]++;
+            if(pos>0)
+                presenti[pos]++;
+            else printf("cazzooo");//lmao
             corrette++;
             totalMask->ofPos[i].sureValue=parola[i];
         }else if(pos==-1){
@@ -873,12 +889,13 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
         if (prs > 0) {
             int pos = posOfLetterInReferences(parola[i]);
             if (parola[i] != riferimento[i]) {
-                presenti[pos]++;
-                if (prs >= presenti[pos]){
-                    corrette++;
-                    mascheraAt[i] = '|';
+                if(pos>0 && pos<wordLen){
+                    presenti[pos]++;
+                    if (prs >= presenti[pos]){
+                        corrette++;
+                        mascheraAt[i] = '|';
+                    }
                 }
-
                 else mascheraAt[i] = '/';
             }
         } else {
@@ -889,11 +906,13 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
     // aggiornamento maschera partita
     for (int i = 0; i < references->nUniche; ++i) {
         int pres=presenti[i];
-        charInfo *tmp=&totalMask->ofChars[i];
-        tmp->letter=references->appearing[i];
-        tmp->appears= pres;
-        if (references->numberOfApp[i] == pres) {
-            tmp->isMax = 1;
+        //charInfo *tmp=&totalMask->ofChars[i];
+        totalMask->ofChars[i].letter=references->appearing[i];
+        if(totalMask->ofChars[i].appears< pres)
+            totalMask->ofChars[i].appears= pres;
+        if (references->numberOfApp[i] < pres) {
+            totalMask->ofChars[i].isMax = 1;
+            totalMask->ofChars[i].appears=references->numberOfApp[i];
         }
     }
     if(corrette == wordLen){
@@ -902,7 +921,7 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
         return;
     }
     printf("%s\n",mascheraAt);
-    aggiornaCompatibili( corrette, nonPres, nNP);
+    aggiornaCompatibili(  nonPres, nNP);
 
 }
 
@@ -915,7 +934,7 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
 
 //------------------comandi
 void nuovaPartita(){
-    char buff[wordLen];
+    //char buff[wordLen];
     compatibili=0;
     char in=(char)getc(INPUT);
     int i=0;
@@ -931,14 +950,14 @@ void nuovaPartita(){
     i=0;
     if(in!='+') {
          do{
-            buff[i] = in;
+            wordk[i] = in;
             in = (char)getc(INPUT);
             i++;
         }while (in != '\n' );
     }
-    tentativi = atoi(buff);
-    char sw;
+    tentativi = atoi(wordk);
 
+    char sw;
     orderedRef= strcpy(orderedRef, riferimento);
     for (int l = 0; l < wordLen; ++l){
         for (int j =l+1; j < wordLen; ++j){//fixme un sort con complessità migliore (non fondamentale, tanto la complessità e su wordLen, wordLen^2=25, klogk=15)
@@ -954,11 +973,19 @@ void nuovaPartita(){
     else initSuccessivi();
 
     *confInPartita=0;
-    while(*confInPartita < tentativi){
-        leggiParolaPerConfronto();
+    int con=0;
+    while(con < tentativi){
+        int xx=leggiParolaPerConfronto();
+        if(xx==1){
+            void (*esec)()= eseguiComando();
+            esec();
+        }else if(xx==2)
+            con++;
+
     }
-    if(*confInPartita == tentativi)
+    if(con == tentativi)
         printf("ko\n");
+
 }
 
 
@@ -989,8 +1016,9 @@ void* eseguiComando(){
     }
     else if(strcmp("nuova_partita",buf)==0) {
         fnPointer=nuovaPartita;
-    }else fnPointer=leggiParolaPerConfronto;
-
+    }//else if(strcmp("inserisci_fine",buf)==0)
+       // fnPointer=leggiParolaPerConfronto;
+    else return NULL;
     return fnPointer;
 }
 
@@ -1004,6 +1032,11 @@ int main(){
             exit(1);
         }
     }
+    parolanodo= malloc(wordLen+1);
+    parolanodo[wordLen]='\0';
+
+    wordk= malloc(wordLen+1);
+    wordk[wordLen]='\0';
     NULLO= malloc(sizeof(TreeNode));
     NULLO->father=NULLO;
     NULLO->leftSon=NULLO;
@@ -1035,6 +1068,7 @@ int main(){
     mascheraAt[wordLen]='\0';
 
     aggiungiAmmissibili();
+    nuovaPartita();
     char rest= (char)getc(INPUT);
     while (rest=='+'){
          void (*ptr)()=eseguiComando();
