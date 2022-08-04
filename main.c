@@ -96,7 +96,6 @@ int leggiParolaPerConfronto(){
         return 2;
     }else{
         printf("not_exists\n");
-        printf("paro: %s\n",wordk);
         return 0;
     }
 
@@ -578,14 +577,10 @@ bool isFromMem;
 void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
 
     chiaveToStringa(nodo->chiave, parolanodo);
-    if(strcmp("asHdd",parolanodo)==0)
-        printf("eccoooooo");
+   // if(strcmp("asHdd",parolanodo)==0)
+     //   printf("eccoooooo");//todo fare in modo che le modifiche all'albero avvengano dopo aver seleczionato quelle da rimuovere, altrimenti alcuni nodi sembrano irraggiungibili
         //if(testaComp==NULLO || testaComp->father!=NULLO)
-    if(nodo->leftSon!=NULLO)
-        recurAggComp(nodo->leftSon,   nonPresenti, nNonPresenti);
 
-    if(nodo->rightSon!=NULLO)
-        recurAggComp(nodo->rightSon,  nonPresenti, nNonPresenti);
 
     chiaveToStringa(nodo->chiave, parolanodo);
     bool ammissibile=true;
@@ -622,6 +617,7 @@ void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
            printf("no\n");
         compatibili--;
         cancellazioneNodoAlbero(nodo);
+        nodo=testaComp;
         //free(nodo);
         if (compatibili == 0) {
             printf("errore filtri, 0 parole compatibili\n");
@@ -629,7 +625,11 @@ void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
         }
 
     }
+    if(nodo->leftSon!=NULLO)
+        recurAggComp(nodo->leftSon,   nonPresenti, nNonPresenti);
 
+    if(nodo->rightSon!=NULLO)
+        recurAggComp(nodo->rightSon,  nonPresenti, nNonPresenti);
 
 }
 
@@ -649,18 +649,34 @@ void aggiornaCompatibili( char* nonPresenti, int nNonPresenti){
     printf("%d \n", compatibili);
 
 }
-bool rispettaTotalMask(){
+bool rispettaTotalMask(char* string){
+    //bool accettabile=true;
+    if(!contieneAlmenoNecessarie(string))
+        return false;
+    int apparizioni[references->nUniche];//UUUUHH!
+    for (int i = 0; i < references->nUniche; ++i) {
+        apparizioni[i]=0;
+    }
+    for (int i = 0; i < wordLen; ++i) {
+        if(totalMask->ofPos[i].sureValue!=string[i] && totalMask->ofPos[i].sureValue!=0)
+            return false;
+        if(totalMask->ofPos[i].notAppear[mappaCharToInt64(string[i])]=='1')
+            return false;
+    }
     return true;
-}
-void aggiornaCompatibiliNuovo() {//l'ultimo elemento mancante
-    if (rispettaTotalMask()) {
 
+}
+void aggiornaCompatibiliNuovo(char* parolaNuova) {//l'ultimo elemento mancante
+    if( *confInPartita ==0)
+        return;
+    if (rispettaTotalMask(parolaNuova) ) {
+        salvaInCompatibili(parolaNuova);
     }
 }
 
 
 void aggiungiAmmissibili(){
-    char word[wordLen];
+    //char word[wordLen];
     int bo=1;
 
     do{
@@ -669,11 +685,13 @@ void aggiungiAmmissibili(){
         char in=(char)getc(INPUT);
         if(in!='+') {
             do {
-                word[i] = in;
+                wordk[i] = in;
                 in = (char)getc(INPUT);
                 i++;
             } while (in != '\n' && i < wordLen);
-            salvaAmmissibile(word);
+            wordk[wordLen]='\0';
+            salvaAmmissibile(wordk);
+            aggiornaCompatibiliNuovo(wordk);
         }
         else{
             bo=0;
@@ -737,6 +755,9 @@ void initPartita(){
     posMask* posMaschera= malloc(wordLen * sizeof (posMask));//todo malloc the space for the structures
     for (int i = 0; i < wordLen; ++i) {
         char *initAr= malloc(64);//fixme make of bits
+        for (int j = 0; j < 64; ++j) {
+            initAr[j]=0;
+        }
         posMaschera[i].notAppear=initAr;
         posMaschera[i].sureValue=0;
     }
@@ -778,11 +799,13 @@ void initSuccessivi(){
     testaComp= malloc(sizeof (TreeNode));
     testaComp->father=NULLO;
     testaComp->chiave=-1;
-    //fixme rialloca albero
+
     posMask* posMaschera= totalMask->ofPos;
     for (int i = 0; i < wordLen; ++i) {
-        char initAr[64];//fixme make of bits,  (dimensione diminuisce di fattore 8, prob ignorabile)
-        posMaschera[i].notAppear=initAr;
+        char *initAr=posMaschera[i].notAppear;
+        for (int j = 0; j < 64; ++j) {
+            initAr[j]=0;
+        }
         posMaschera[i].sureValue=0;
     }
     compatibili=0;
@@ -873,7 +896,7 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
           //  salvaPres[corrette]=parola[i];
             if(pos>0)
                 presenti[pos]++;
-            else printf("cazzooo");//lmao
+            else printf("");//lmao
             corrette++;
             totalMask->ofPos[i].sureValue=parola[i];
         }else if(pos==-1){
@@ -975,6 +998,7 @@ void nuovaPartita(){
     *confInPartita=0;
     int con=0;
     while(con < tentativi){
+        *confInPartita=con;
         int xx=leggiParolaPerConfronto();
         if(xx==1){
             void (*esec)()= eseguiComando();
@@ -1032,6 +1056,7 @@ int main(){
             exit(1);
         }
     }
+
     parolanodo= malloc(wordLen+1);
     parolanodo[wordLen]='\0';
 
@@ -1044,6 +1069,7 @@ int main(){
     NULLO->isBlack=true;
     NULLO->chiave=-1;
     confInPartita= malloc(sizeof (int));
+    *confInPartita=0;
     char input[5];
     char in=(char)getc(INPUT);
     int i=0;
