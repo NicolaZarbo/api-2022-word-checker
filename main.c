@@ -5,6 +5,8 @@
 
 #define FROMFILE 1
 #define INPUT fp
+#define ROOTKEY -5
+#define NULLKEY -1
 
 void salvaAmmissibile(char *word);
 void nuovaPartita();
@@ -119,20 +121,36 @@ TreeNode *treeHead;
 TreeNode *testaComp;
 
 void deAllocaCompatibili(TreeNode *nodo){
+    if(nodo==NULLO){
+        printf("errore di de-allocazione");
+        return;
+    }
     if(nodo->leftSon!=NULLO)
          deAllocaCompatibili(nodo->leftSon);
     if(nodo->rightSon!=NULLO)
         deAllocaCompatibili(nodo->rightSon);
+    if(nodo->chiave==ROOTKEY || nodo==testaComp)
+        return;
     free(nodo);
 }
-
+void innestaSopra(TreeNode* innesto, TreeNode* target, TreeNode* radice){
+    if(target!=radice){
+        if(target==target->father->leftSon)
+            target->father->leftSon=innesto;
+        else target->father->rightSon=innesto;
+    }else if(radice==testaComp){
+        testaComp=innesto;
+    } else treeHead=innesto;
+    innesto->father=target->father;
+}
 void ruotaSX(TreeNode *nodo, TreeNode* testa){
     TreeNode *exFiglio=nodo->rightSon;
     nodo->rightSon=exFiglio->leftSon;
     if(exFiglio->leftSon != NULLO)
         exFiglio->leftSon->father=nodo;
     exFiglio->father=nodo->father;
-    if(nodo->father==NULLO) {//aggiorna testa dell'albero
+
+    if(nodo->father==NULLO) {//aggiorna testa dell'albero???
         if (testa == treeHead)
             treeHead = exFiglio;
         else testaComp=exFiglio;
@@ -179,11 +197,8 @@ void sistemaInserimento(TreeNode* nuNodo, TreeNode *testa) {
     while (!padreNero) {
         TreeNode *nonno = nuNodo->father->father;
         if (nonno->leftSon == nuNodo->father) {
-            bool nonnoNero=true;
-            if(nonno->rightSon!=NULLO){
-                nonnoNero=nonno->rightSon->isBlack;
-            }
-            if (!nonnoNero) {
+            bool zioNero=nonno->rightSon->isBlack;
+            if (!zioNero) {
                 nonno->rightSon->isBlack = true;
                 nonno->leftSon->isBlack = true;
                 nonno->isBlack = false;
@@ -224,8 +239,13 @@ void sistemaInserimento(TreeNode* nuNodo, TreeNode *testa) {
 }
 
 void scendiDaRootInsert(TreeNode *nuNodo, TreeNode *nodo){
-    if(nodo!=NULLO) {//fixme perche lo ho messo??
-        if (nuNodo->chiave > nodo->chiave) {
+    if(nodo==NULLO ||nodo->chiave==ROOTKEY){
+        nuNodo->father=NULLO;
+        nuNodo->leftSon=NULLO;
+        nuNodo->rightSon=NULLO;
+        return;
+    }
+    if (nuNodo->chiave > nodo->chiave) {
             if (nodo->rightSon != NULLO) {
                 scendiDaRootInsert(nuNodo, nodo->rightSon);
                 return;
@@ -238,19 +258,19 @@ void scendiDaRootInsert(TreeNode *nuNodo, TreeNode *nodo){
             }
             nodo->leftSon = nuNodo;
         }
-    }
     nuNodo->father=nodo;
     nuNodo->rightSon=NULLO;
     nuNodo->leftSon= NULLO;
-
-
 }
+
 void aggiungiNodo(int key,TreeNode *testaAlbero ){
     TreeNode *nuNodo= malloc(sizeof (TreeNode));
     nuNodo->chiave=key;
     nuNodo->isBlack=false;
+    TreeNode * ptt=testaAlbero;
 
-    if(testaAlbero->chiave==-1){//possibile ottimizzazione, rimuovi questo case?
+
+   /* if(testaAlbero->chiave==ROOTKEY){//possibile ottimizzazione, rimuovi questo case?
         nuNodo->father=NULLO;
         nuNodo->isBlack=true;
         nuNodo->leftSon=NULLO;
@@ -258,10 +278,22 @@ void aggiungiNodo(int key,TreeNode *testaAlbero ){
         if(testaAlbero==treeHead)
             treeHead=nuNodo;
         else testaComp=nuNodo;
-    } else {
+
+    } else { */
+
         scendiDaRootInsert(nuNodo, testaAlbero);
+        if(nuNodo->father==NULLO)
+        {
+            if(testaAlbero==treeHead)
+                treeHead=nuNodo;
+            else testaComp=nuNodo;
+            nuNodo->isBlack=true;
+        }
+        if(nuNodo->father->father==NULLO)
+            return;
         sistemaInserimento(nuNodo, testaAlbero);
-    }
+   // }
+
 }
 
 TreeNode * minOfSubTree(TreeNode* nodo) {
@@ -275,17 +307,18 @@ void sistemaCancellazione(TreeNode* nodoSost) {
         testaComp = nodoSost;
         return;
     }*/
-    while (nodoSost->father != NULLO && nodoSost->isBlack) {
+    while (nodoSost != testaComp && nodoSost->isBlack) {
         if (nodoSost == nodoSost->father->leftSon) {
             TreeNode *fratello = nodoSost->father->rightSon;
             if (!fratello->isBlack) {
                 fratello->isBlack = true;
                 nodoSost->father->isBlack = false;
-                ruotaSX(nodoSost->father, testaComp);
+                ruotaSX(nodoSost->father, testaComp);// qui contronto eliminazione 2_z91
                 fratello = nodoSost->father->rightSon;
             }
             if (fratello->leftSon->isBlack && fratello->rightSon->isBlack) {
-                fratello->isBlack = false;
+                if(fratello!=NULLO)
+                    fratello->isBlack = false;
                 nodoSost = nodoSost->father;
             } else {
                 if (fratello->rightSon->isBlack) {
@@ -298,8 +331,9 @@ void sistemaCancellazione(TreeNode* nodoSost) {
                 nodoSost->father->isBlack = true;
                 fratello->rightSon->isBlack = true;
                 ruotaSX(nodoSost->father, testaComp);
-                nodoSost->father = NULLO;//this is the new root
-                treeHead = nodoSost;
+                //nodoSost->father = NULLO;//this is the new root
+                //treeHead = nodoSost;
+                nodoSost=testaComp;
                 }
 
         } else {
@@ -307,7 +341,7 @@ void sistemaCancellazione(TreeNode* nodoSost) {
             if (!fratello->isBlack) {
                 fratello->isBlack = true;
                 nodoSost->father->isBlack = false;
-                ruotaSX(nodoSost->father, testaComp);
+                ruotaDX(nodoSost->father, testaComp);
                 fratello = nodoSost->father->leftSon;
             }
             if (fratello->rightSon->isBlack && fratello->leftSon->isBlack) {
@@ -317,102 +351,86 @@ void sistemaCancellazione(TreeNode* nodoSost) {
                 if (fratello->leftSon->isBlack) {
                     fratello->rightSon->isBlack = true;
                     fratello->isBlack = false;
-                    ruotaDX(fratello, testaComp);
+                    ruotaSX(fratello, testaComp);
                     fratello = nodoSost->father->leftSon;
                 }
                 fratello->isBlack = nodoSost->father->isBlack;
                 nodoSost->father->isBlack = true;
                 fratello->leftSon->isBlack = true;
-                ruotaSX(nodoSost->father,testaComp);
-                nodoSost->father = NULLO;//this is the new root
-                treeHead = nodoSost;
+                ruotaDX(nodoSost->father,testaComp);
+                //nodoSost->father = NULLO;//this is the new root fixme necessaria??
+                nodoSost=testaComp;
             }
         }
 
     }
     nodoSost->isBlack = true;
-    testaComp=nodoSost;
+    //testaComp=nodoSost;
 }
 //per contrarre i compatibili
 void cancellazioneNodoAlbero(TreeNode* nodo){
         //fixme rivedere
     bool wasBlack=nodo->isBlack;
     TreeNode *nodoSos;
-   /* if(nodo->leftSon==NULLO&& nodo->rightSon==NULLO){
-        if(nodo==testaComp) {
-            testaComp->chiave=-1;
-            return;
+    if(nodo->rightSon==NULLO && nodo->leftSon==NULLO)
+    {
+        if(nodo==testaComp){
+            testaComp->leftSon=NULLO;
+            testaComp->rightSon=NULLO;
+            testaComp->chiave=ROOTKEY;
         }
-        if(nodo->father->leftSon==nodo)
-            nodo->father->leftSon=NULLO;
-        else nodo->father->rightSon=NULLO;
-        free(nodo);
+
+        else {
+            if (nodo->father->leftSon == nodo){
+                nodo->father->leftSon = NULLO;//a caso
+                ruotaSX(nodo->father,testaComp);
+            }
+
+            else {
+                nodo->father->rightSon = NULLO;
+                ruotaDX(nodo->father,testaComp);
+
+            }
+        }
         return;
-    }*/
-    if(nodo->leftSon==NULLO){
-        nodoSos=nodo->rightSon;// fixme e se entrambi sono null????
-        /*if(nodoSos!=NULLO){
-            nodoSos->father=nodo->father;
-        }*/
-        if(nodo->father!=NULLO) {
-            if (nodo->father->leftSon == nodo)
-                nodo->father->leftSon = nodoSos;
-            else nodo->father->rightSon = nodoSos;
-        }
-        nodoSos->father=nodo->father;
+    }
+    else if(nodo->leftSon==NULLO){
+        nodoSos=nodo->rightSon;
+        innestaSopra(nodo->rightSon, nodo, testaComp);
 
     }else if(nodo->rightSon==NULLO) {
         nodoSos=nodo->leftSon;
-       /*if(nodoSos!=NULLO){
-            nodoSos->father=nodo->father;
-        }*/
-        if(nodo->father!=NULLO) {
-            if (nodo->father->leftSon == nodo)
-                nodo->father->leftSon = nodoSos;
-            else nodo->father->rightSon = nodoSos;
-        }
-        nodoSos->father=nodo->father;
-
-    } else {
+        innestaSopra(nodo->leftSon,nodo,testaComp);
+    }else {
         TreeNode *min = minOfSubTree(nodo->rightSon);
         wasBlack = min->isBlack;
         nodoSos = min->rightSon;//fixme e se min non ha figli destri???
         if (min->father == nodo) {
             nodoSos->father = min;
         } else {
-            if (min->father->leftSon == min)
-                min->father->leftSon = nodoSos;//non dovrebbe mai entrare qui!!, rimuovere
-            else min->father->rightSon = nodoSos;
-            nodoSos->father = min->father;
+            innestaSopra(min->rightSon,min,testaComp);//ottimizzabili(poco)
+
             min->rightSon=nodo->rightSon;//capire meglio
             min->rightSon->father=min;
         }
-        //    min->father->leftSon=min->rightSon;
-        //  min->rightSon->father=min->father;
 
-
-        //nodo->isBlack = wasBlack;
-        if(nodo->father!=NULLO) {
-            if (nodo->father->leftSon == nodo)//fixme e se è il root
-                nodo->father->leftSon = min;
-            else nodo->father->rightSon = min;
-        }
-        min->father = nodo->father;
-
+        innestaSopra(min,nodo,testaComp);
         min->leftSon=nodo->leftSon;
         min->leftSon->father=min;
-        //nodoSos = min;
         min->isBlack = nodo->isBlack;//???corretto?
-        if(nodo->father==NULLO)
-            testaComp=min;
+        //if(nodo->father==NULLO)
+          //  testaComp=min;
     }
     if(testaComp->father!=NULLO)
-        testaComp=NULLO;
+        printf("errore, root strano");
     if(wasBlack)
         sistemaCancellazione(nodoSos);
+    if(testaComp->father!=NULLO)
+        printf("errore, root strano");
+    if(testaComp==NULLO)
+        printf("errore, root nullo");
 
-
-   // free(nodo);//funzia??todo come faccio a deallocare, questo incasina tutto
+   // free(nodo);//funzia??todo come faccio a de-allocare, questo incasina tutto
 
 }
 char mappaInt64ToChar(int val){//todo ri-testare
@@ -453,7 +471,7 @@ char* debugKEY(int chiave){
     int res;
     for (int i = 0; i < wordLen; ++i) {
         res=key/(esp);
-        target[wordLen - 1 - i]= mappaInt64ToChar(res);
+        target[i]= mappaInt64ToChar(res);
         key-=res*esp;
         if(i == wordLen - 1)
             break;
@@ -504,11 +522,11 @@ int string2chiave(char* stringa){
 bool pres(int chiave, TreeNode* nodo){
     if(nodo==NULLO)
         return false;
-    if(nodo->chiave==chiave)
+    else if(nodo->chiave==chiave)
         return true;
-    if(nodo->chiave<chiave)
+    else if(nodo->chiave<chiave)
         return pres(chiave,nodo->rightSon);
-    if(chiave<nodo->chiave)
+    else if(chiave<nodo->chiave)
         return pres(chiave,nodo->leftSon);
     return false;
 }
@@ -574,17 +592,21 @@ void testAlbero(){
 //-------------------memoria
 
 
-
+bool found;
 bool isFromMem;
 void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
 
+    if(found && !isFromMem)
+        return;
     chiaveToStringa(nodo->chiave, parolanodo);
-   // if(strcmp("sm_ks",wordk)==0)
-     //   printf("eccoooooo   ");//todo fare in modo che le modifiche all'albero avvengano dopo aver seleczionato quelle da rimuovere, altrimenti alcuni nodi sembrano irraggiungibili
+    if(strcmp("2rz9R",parolanodo)==0) {
+        printf("nodo:%s  sx:%s,  dx:%s\n" ,parolanodo, debugKEY(nodo->leftSon->chiave), debugKEY(nodo->rightSon->chiave));
+            attraversamentoOrdinato(testaComp);
+        //printf("eccoooooo   ");//todo fare in modo che le modifiche all'albero avvengano dopo aver seleczionato quelle da rimuovere, altrimenti alcuni nodi sembrano irraggiungibili
         //if(testaComp==NULLO || testaComp->father!=NULLO)
+        }
     TreeNode *sinistro=nodo->leftSon;
     TreeNode *destro=nodo->rightSon;
-
 
     chiaveToStringa(nodo->chiave, parolanodo);
     bool ammissibile=true;
@@ -604,57 +626,61 @@ void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
         if (contieneCaratteriNonPresenti(parolanodo, nonPresenti, nNonPresenti))
             ammissibile = false;
     }
-    TreeNode *succ=nodo->rightSon;
     //modifica compatibili
     if(ammissibile && isFromMem){
         salvaInCompatibili(parolanodo);
         if(testaComp==NULLO)
             testaComp=NULLO;
         compatibili++;
-       // printf("%s    aggiunta\n",parolanodo);
+       printf("%s  aggiunta\n",parolanodo);
+
     } else if(!ammissibile && !isFromMem) {
        if(presenteTraComp(parolanodo))
            printf("");
        else
            printf("no\n");
         compatibili--;
+        found=true;
         bool test=presenteTraComp(parolanodo);
-       // printf("%s  deleted\n",parolanodo);
+        printf("%s  deleted\n",parolanodo);
 
         cancellazioneNodoAlbero(nodo);
-        recurAggComp(testaComp,nonPresenti,nNonPresenti);
-        //sinistro=testaComp->leftSon;
-        //destro=testaComp->rightSon;
-        //nodo=testaComp;
-        //free(nodo);
         if (compatibili == 0) {
             printf("errore filtri, 0 parole compatibili\n");
-            return;
+            return ;
         }
 
-    }// else if(ammissibile && !isFromMem)
-       // printf("%s   mantenuta\n",parolanodo);
-    if(sinistro!=NULLO)
+        return;
+        //free(nodo);
+
+
+    } /*else if(ammissibile && !isFromMem)
+       printf("%s  mantenuta\n",parolanodo);*/
+    if(found && !isFromMem)
+        return;
+    if(destro!=NULLO && !found)
+        recurAggComp(destro,  nonPresenti, nNonPresenti);
+    if(sinistro!=NULLO &&!found)
         recurAggComp(sinistro,   nonPresenti, nNonPresenti);
 
-    if(destro!=NULLO)
-        recurAggComp(destro,  nonPresenti, nNonPresenti);
+
 
 }
 
 
 void aggiornaCompatibili( char* nonPresenti, int nNonPresenti){
     //draft senza ottimizzazioni
-    TreeNode *provenienza;
     if(compatibili == 0) {
-        provenienza = treeHead;
         isFromMem=true;
+        recurAggComp(treeHead,nonPresenti, nNonPresenti);
     }else{
-        provenienza = testaComp;
         isFromMem=false;
+        do{
+            found=false;
+            recurAggComp(testaComp , nonPresenti, nNonPresenti);
+        }while(found);
     }
 
-    recurAggComp(provenienza , nonPresenti, nNonPresenti);
     printf("%d \n", compatibili);
 
 }
@@ -806,9 +832,11 @@ void initPartita(){
 void initSuccessivi(){//todo qualcosa di molto brutto accade qui da qualche parte
     deAllocaCompatibili(testaComp);
     //rinnovo compatibili
-    testaComp= malloc(sizeof (TreeNode));//si perde ogni volta la testa temporanea, si potrebbe riusare il puntatore
+    //testaComp= malloc(sizeof (TreeNode));//si perde ogni volta la testa temporanea, si potrebbe riusare il puntatore
     testaComp->father=NULLO;
-    testaComp->chiave=-1;
+    testaComp->leftSon=NULLO;
+    testaComp->rightSon=NULLO;
+    testaComp->chiave=ROOTKEY;
     //rinnovo strutture per confronti
     //posMask* posMaschera= totalMask->ofPos;
     for (int i = 0; i < wordLen; ++i) {
@@ -1077,7 +1105,7 @@ int main(){
     NULLO->leftSon=NULLO;
     NULLO->rightSon=NULLO;
     NULLO->isBlack=true;
-    NULLO->chiave=-1;
+    NULLO->chiave=NULLKEY;//nullkey
     confInPartita= malloc(sizeof (int));
     *confInPartita=0;
     char input[5];
@@ -1092,10 +1120,10 @@ int main(){
     salvaPres[wordLen]='\0';
     wordLen= atoi(input);
     testaComp= malloc(sizeof(TreeNode));
-    testaComp->chiave=-1;
+    testaComp->chiave=ROOTKEY;
 
     treeHead= malloc(sizeof (TreeNode));
-    treeHead->chiave=-1;
+    treeHead->chiave=ROOTKEY;
     orderedRef= malloc(wordLen + 1);
     orderedRef[wordLen]='\0';
     riferimento=malloc(wordLen + 1);
@@ -1104,7 +1132,7 @@ int main(){
     mascheraAt[wordLen]='\0';
 
     aggiungiAmmissibili();
-    nuovaPartita();
+    nuovaPartita();//esegui comando nel caso avvenga roba prima di nuova partita => inizializzare roba di init prima
     char rest= (char)getc(INPUT);
     while (rest=='+'){
          void (*ptr)()=eseguiComando();
