@@ -368,7 +368,7 @@ void sistemaCancellazione(TreeNode* nodoSost) {
     //testaComp=nodoSost;
 }
 //per contrarre i compatibili
-void cancellazioneNodoAlbero(TreeNode* nodo){
+void cancellazioneNodoAlbero(TreeNode* nodo){//fixme attenzione, viene perso un nodo ogni tanto
         //fixme rivedere
     bool wasBlack=nodo->isBlack;
     TreeNode *nodoSos;
@@ -599,12 +599,11 @@ void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
     if(found && !isFromMem)
         return;
     chiaveToStringa(nodo->chiave, parolanodo);
-    if(strcmp("2rz9R",parolanodo)==0) {
-        printf("nodo:%s  sx:%s,  dx:%s\n" ,parolanodo, debugKEY(nodo->leftSon->chiave), debugKEY(nodo->rightSon->chiave));
-            attraversamentoOrdinato(testaComp);
-        //printf("eccoooooo   ");//todo fare in modo che le modifiche all'albero avvengano dopo aver seleczionato quelle da rimuovere, altrimenti alcuni nodi sembrano irraggiungibili
+    if(strcmp("fo7f",wordk)==0) {
+        //printf("nodo:%s  sx:%s,  dx:%s\n" ,parolanodo, debugKEY(nodo->leftSon->chiave), debugKEY(nodo->rightSon->chiave));
+        attraversamentoOrdinato(testaComp);
         //if(testaComp==NULLO || testaComp->father!=NULLO)
-        }
+    }
     TreeNode *sinistro=nodo->leftSon;
     TreeNode *destro=nodo->rightSon;
 
@@ -632,30 +631,28 @@ void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
         if(testaComp==NULLO)
             testaComp=NULLO;
         compatibili++;
-       printf("%s  aggiunta\n",parolanodo);
+      // printf("%s  aggiunta\n",parolanodo);
 
     } else if(!ammissibile && !isFromMem) {
        if(presenteTraComp(parolanodo))
            printf("");
        else
            printf("no\n");
-        compatibili--;
-        found=true;
-        bool test=presenteTraComp(parolanodo);
-        printf("%s  deleted\n",parolanodo);
-
-        cancellazioneNodoAlbero(nodo);
         if (compatibili == 0) {
             printf("errore filtri, 0 parole compatibili\n");
             return ;
         }
-
+        compatibili--;
+        found=true;
+        bool test=presenteTraComp(parolanodo);
+       // printf("%s  deleted\n",parolanodo);
+        cancellazioneNodoAlbero(nodo);
+        //attraversamentoOrdinato(testaComp);
         return;
         //free(nodo);
-
-
     } /*else if(ammissibile && !isFromMem)
-       printf("%s  mantenuta\n",parolanodo);*/
+       printf("%s  mantenuta\n",parolanodo);
+       */
     if(found && !isFromMem)
         return;
     if(destro!=NULLO && !found)
@@ -682,7 +679,7 @@ void aggiornaCompatibili( char* nonPresenti, int nNonPresenti){
     }
 
     printf("%d \n", compatibili);
-
+    attraversamentoOrdinato(testaComp);//fixme debug
 }
 bool rispettaTotalMask(char* string){
     //bool accettabile=true;
@@ -1043,7 +1040,6 @@ void nuovaPartita(){
             esec();
         }else if(xx==2)
             con++;
-
     }
     if(*confInPartita == tentativi)
         printf("ko\n");
@@ -1089,7 +1085,7 @@ int main(){
     //testAlbero();
 
     if(FROMFILE>0){
-        if ((fp = fopen("C:/Users/User/CLionProjects/api-2022-word-checker/open_testcases/test1.txt", "r")) == NULL){
+        if ((fp = fopen("C:/Users/User/CLionProjects/api-2022-word-checker/open_testcases/test2.txt", "r")) == NULL){
             printf("File cannot open");
             exit(1);
         }
