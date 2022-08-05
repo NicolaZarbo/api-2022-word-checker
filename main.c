@@ -504,11 +504,13 @@ int string2chiave(char* stringa){
 bool pres(int chiave, TreeNode* nodo){
     if(nodo==NULLO)
         return false;
+    if(nodo->chiave==chiave)
+        return true;
     if(nodo->chiave<chiave)
         return pres(chiave,nodo->rightSon);
     if(chiave<nodo->chiave)
         return pres(chiave,nodo->leftSon);
-    else return true;
+    return false;
 }
 bool presenteTraAmmissibili(char* parola){
     int keyOfParola= string2chiave(parola);
@@ -577,9 +579,11 @@ bool isFromMem;
 void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
 
     chiaveToStringa(nodo->chiave, parolanodo);
-   // if(strcmp("asHdd",parolanodo)==0)
-     //   printf("eccoooooo");//todo fare in modo che le modifiche all'albero avvengano dopo aver seleczionato quelle da rimuovere, altrimenti alcuni nodi sembrano irraggiungibili
+   // if(strcmp("sm_ks",wordk)==0)
+     //   printf("eccoooooo   ");//todo fare in modo che le modifiche all'albero avvengano dopo aver seleczionato quelle da rimuovere, altrimenti alcuni nodi sembrano irraggiungibili
         //if(testaComp==NULLO || testaComp->father!=NULLO)
+    TreeNode *sinistro=nodo->leftSon;
+    TreeNode *destro=nodo->rightSon;
 
 
     chiaveToStringa(nodo->chiave, parolanodo);
@@ -607,29 +611,34 @@ void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
         if(testaComp==NULLO)
             testaComp=NULLO;
         compatibili++;
+       // printf("%s    aggiunta\n",parolanodo);
     } else if(!ammissibile && !isFromMem) {
-        //canc = nodo;//trovaNodo(string2chiave(parola), testaComp);
-     //   if (testaComp == nodo )
-       //     printf("nodo= testa\n");
        if(presenteTraComp(parolanodo))
            printf("");
        else
            printf("no\n");
         compatibili--;
+        bool test=presenteTraComp(parolanodo);
+       // printf("%s  deleted\n",parolanodo);
+
         cancellazioneNodoAlbero(nodo);
-        nodo=testaComp;
+        recurAggComp(testaComp,nonPresenti,nNonPresenti);
+        //sinistro=testaComp->leftSon;
+        //destro=testaComp->rightSon;
+        //nodo=testaComp;
         //free(nodo);
         if (compatibili == 0) {
             printf("errore filtri, 0 parole compatibili\n");
             return;
         }
 
-    }
-    if(nodo->leftSon!=NULLO)
-        recurAggComp(nodo->leftSon,   nonPresenti, nNonPresenti);
+    }// else if(ammissibile && !isFromMem)
+       // printf("%s   mantenuta\n",parolanodo);
+    if(sinistro!=NULLO)
+        recurAggComp(sinistro,   nonPresenti, nNonPresenti);
 
-    if(nodo->rightSon!=NULLO)
-        recurAggComp(nodo->rightSon,  nonPresenti, nNonPresenti);
+    if(destro!=NULLO)
+        recurAggComp(destro,  nonPresenti, nNonPresenti);
 
 }
 
@@ -794,44 +803,45 @@ void initPartita(){
     nPartite++;
 }
 
-void initSuccessivi(){
+void initSuccessivi(){//todo qualcosa di molto brutto accade qui da qualche parte
     deAllocaCompatibili(testaComp);
-    testaComp= malloc(sizeof (TreeNode));
+    //rinnovo compatibili
+    testaComp= malloc(sizeof (TreeNode));//si perde ogni volta la testa temporanea, si potrebbe riusare il puntatore
     testaComp->father=NULLO;
     testaComp->chiave=-1;
-
-    posMask* posMaschera= totalMask->ofPos;
+    //rinnovo strutture per confronti
+    //posMask* posMaschera= totalMask->ofPos;
     for (int i = 0; i < wordLen; ++i) {
-        char *initAr=posMaschera[i].notAppear;
+        char *initAr=totalMask->ofPos[i].notAppear;
         for (int j = 0; j < 64; ++j) {
             initAr[j]=0;
         }
-        posMaschera[i].sureValue=0;
+        totalMask->ofPos[i].sureValue=0;
     }
     compatibili=0;
-    char *letSing= references->appearing;
-    int *nApp= references->numberOfApp;
+//    char *letSing= references->appearing;
+    //int *nApp= references->numberOfApp;
 
-    letSing[0]=orderedRef[0];
+    references->appearing[0]=orderedRef[0];
     int cc=0;
 
-    nApp[0]=1;
-    for (int i = 1; i < wordLen; ++i) {
-        if(orderedRef[i]!=letSing[cc]){
+    references->numberOfApp[0]=1;
+    for (int i = 1; i < wordLen; ++i) {//occhio a dimensioni e valore di cc
+        if(orderedRef[i]!=references->appearing[cc]){
             cc++;
-            letSing[cc]=orderedRef[i];
-            nApp[cc]=1;
+            references->appearing[cc]=orderedRef[i];
+            references->numberOfApp[cc]=1;
         }else{
-            nApp[cc]++;
+            references->numberOfApp[cc]++;
         }
     }
-    letSing[cc+1]='\0';
+    references->appearing[cc+1]='\0';
     references->nUniche=cc+1;
-    charInfo *arrInfo=totalMask->ofChars;
+    //charInfo *arrInfo=totalMask->ofChars;
     for (int i = 0; i < cc+1; ++i) {
-        arrInfo[i].appears=0;
-        arrInfo[i].letter=letSing[i];
-        arrInfo[i].isMax=0;
+        totalMask->ofChars[i].appears=0;
+        totalMask->ofChars[i].letter=references->appearing[i];
+        totalMask->ofChars[i].isMax=0;
     }
     nPartite++;
 }
@@ -1007,7 +1017,7 @@ void nuovaPartita(){
             con++;
 
     }
-    if(con == tentativi)
+    if(*confInPartita == tentativi)
         printf("ko\n");
 
 }
@@ -1051,7 +1061,7 @@ int main(){
     //testAlbero();
 
     if(FROMFILE>0){
-        if ((fp = fopen("C:/Users/User/CLionProjects/api-2022-word-checker/open_testcases/slide.txt", "r")) == NULL){
+        if ((fp = fopen("C:/Users/User/CLionProjects/api-2022-word-checker/open_testcases/test1.txt", "r")) == NULL){
             printf("File cannot open");
             exit(1);
         }
