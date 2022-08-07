@@ -31,7 +31,7 @@ typedef struct maskOfPos{
 typedef struct charInfo{
     int appears;
     int isMax;//fixme optimise
-    char letter;
+    //char letter;
 }charInfo;
 typedef struct megaMask{
     posMask* ofPos;
@@ -49,7 +49,6 @@ void salvaInCompatibili(char *parola);
 //----------------globali
 megaMask *totalMask;
 char* parolanodo;
-char* salvaPres;
 char *nonPres;
 int salvate;
 int compatibili;//relativo alla partita
@@ -63,45 +62,11 @@ refInfo * references;
 char* mascheraAt;
 int nPartite;
 //------------------input
-char* target;
+//char* target;
 //----debug
 char *wordk;
-int leggiParolaPerConfronto(){
-    //wordk[0]= (char)getc(INPUT);
+// ----------------
 
-    char in=(char ) getc(INPUT);
-    if(in==EOF){
-        *confInPartita=tentativi+20;
-        exit(0);
-    }
-
-    if(in == '+'){
-
-        return 1;
-    }
-    wordk[0]=in;
-    int i=1;
-    in=(char ) getc(INPUT);
-    while(in!='\n' && i<wordLen){
-        wordk[i]=in;
-        i++;
-        in=(char ) getc(INPUT);
-    }
-
-    wordk[wordLen]= '\0';
-    //if(strcmp(wordk,"sm_ks")==0){
-      //  printf("ssss");
-    //}
-    if(presenteTraAmmissibili(wordk) ){
-        confronto(wordk);
-        *confInPartita=*confInPartita+1;
-        return 2;
-    }else{
-        printf("not_exists\n");
-        return 0;
-    }
-
-}
 
 
 
@@ -120,12 +85,12 @@ TreeNode  *NULLO;
 TreeNode *treeHead;
 TreeNode *testaComp;
 
-int recContaPeso(TreeNode* nodo);
-char* debugKEY(int chiave);
+//int recContaPeso(TreeNode* nodo);
+//char* debugKEY(int chiave);
 void attraversamentoOrdinato(TreeNode* vertice);
 
 
-void deAllocaCompatibili(TreeNode *nodo){
+void deAllocaCompatibili(TreeNode *nodo){//rendere non ricorsivo
     if(nodo==NULLO){
         printf("errore di de-allocazione");
         return;
@@ -420,8 +385,8 @@ void sistemaCancellazione(TreeNode* nodoSost) {
 //per contrarre i compatibili
 void cancellazioneNodoAlbero(TreeNode* nodo){//fixme attenzione, viene perso un nodo ogni tanto
         //fixme rivedere
-    bool wasBlack=nodo->isBlack;
-    TreeNode *nodoSos;
+    //bool wasBlack=nodo->isBlack;
+   // TreeNode *nodoSos;
   /*  if(strcmp("qDJL",parolanodo)==0){
         printf("canc incriminato\n");
         attraversamentoOrdinato(testaComp);
@@ -454,18 +419,19 @@ void cancellazioneNodoAlbero(TreeNode* nodo){//fixme attenzione, viene perso un 
         return;
     }
     else if(nodo->leftSon==NULLO){
-        nodoSos=nodo->rightSon;
+    //    nodoSos=nodo->rightSon;
         innestaSopra(nodo->rightSon, nodo, testaComp);
 
     }else if(nodo->rightSon==NULLO) {
-        nodoSos=nodo->leftSon;
+        //nodoSos=nodo->leftSon;
         innestaSopra(nodo->leftSon,nodo,testaComp);
     }else {
         TreeNode *min = minOfSubTree(nodo->rightSon);
-        wasBlack = min->isBlack;
-        nodoSos = min->rightSon;//fixme e se min non ha figli destri???
+   //     wasBlack = min->isBlack;
+        //nodoSos = min->rightSon;//fixme e se min non ha figli destri???
         if (min->father == nodo) {
-            nodoSos->father = min;
+           // nodoSos->father = min;
+            NULLO->father=NULLO;//debug elimina serve per non cambiare struttura if
         } else {
             innestaSopra(min->rightSon,min,testaComp);//ottimizzabili(poco)
 
@@ -484,16 +450,10 @@ void cancellazioneNodoAlbero(TreeNode* nodo){//fixme attenzione, viene perso un 
         printf("cancellato\n");
         attraversamentoOrdinato(testaComp);
     }*/
-    if(testaComp->father!=NULLO)
-        printf("errore, root strano");
+ //   if(testaComp->father!=NULLO)
+   //     printf("errore, root strano");
     //if(wasBlack)
       //  sistemaCancellazione(nodoSos);
-    if(testaComp->chiave==ROOTKEY)
-        printf("casino in root");
-    if(testaComp->father!=NULLO)
-        printf("errore, root strano");
-    if(testaComp==NULLO)
-        printf("errore, root nullo");
 
    // free(nodo);//funzia??todo come faccio a de-allocare, questo incasina tutto
 
@@ -509,7 +469,7 @@ char mappaInt64ToChar(int val){//todo ri-testare
         return (char)(val+59);
     return 95;
 }
-int powerOfKFor(int number){
+int powerOfKFor(){
     int out=1;
     for (int i = 0; i < wordLen - 1; ++i) {
         out=out*64;
@@ -518,7 +478,7 @@ int powerOfKFor(int number){
 }
 void chiaveToStringa(int chiave, char* buffer){
     int key=chiave;
-    int esp= powerOfKFor(64);
+    int esp= powerOfKFor();
     int res;
     for (int i = 0; i < wordLen; ++i) {
         res=key/(esp);//fixme ogni tanto accadono cose strane qui e va in segfault
@@ -634,8 +594,8 @@ void testAlbero(){
 
 
 
-
-//*************DEBUG
+/*
+// *************DEBUG
 
 char* debugKEY(int chiave){
     int key=chiave;
@@ -661,14 +621,14 @@ int recContaPeso(TreeNode* nodo){
         adder++;
     int pesoDX= recContaPeso(nodo->rightSon);
     int pesoSX= recContaPeso(nodo->leftSon);
-   /* if(pesoDX!=pesoSX  )
+    if(pesoDX!=pesoSX  )
     {
         printf("right %d , left %d\n", pesoDX, pesoSX);
         if(pesoSX<1000 && pesoDX<1000) {
             printf("sotto alberi sbilanciati da nodo  %s\n", debugKEY(nodo->chiave));
         }
         return 1000;
-    }*/
+    }
     return pesoSX+adder;
 }
 bool recControllaRB(TreeNode* nodo){
@@ -687,15 +647,50 @@ void debugControlloAlbero(TreeNode* testa){
         printf("nodo cattivo\n");
 }
 
-
+*/
 
 
 
 //-------------------memoria
 
+int leggiParolaPerConfronto(){
+    //wordk[0]= (char)getc(INPUT);
+
+    char in=(char ) getc(INPUT);
+    if(in==EOF){
+        *confInPartita=tentativi+20;
+        exit(0);
+    }
+
+    if(in == '+'){
+
+        return 1;
+    }
+    wordk[0]=in;
+    int i=1;
+    in=(char ) getc(INPUT);
+    while(in!='\n' && i<wordLen){
+        wordk[i]=in;
+        i++;
+        in=(char ) getc(INPUT);
+    }
+
+    wordk[wordLen]= '\0';
+    //if(strcmp(wordk,"sm_ks")==0){
+    //  printf("ssss");
+    //}
+    if(presenteTraAmmissibili(wordk) ){
+        confronto(wordk);
+        *confInPartita=*confInPartita+1;
+        return 2;
+    }else{
+        printf("not_exists\n");
+        return 0;
+    }
+
+}
 
 bool found;
-bool isFromMem;
 bool ammissibileDaConfronto(char* nonPresenti, int nNonPresenti){
     for (int j = 0; j < wordLen; ++j) {
         if(!accConfrontoLettera(j, wordk[j], parolanodo[j])) {
@@ -704,92 +699,55 @@ bool ammissibileDaConfronto(char* nonPresenti, int nNonPresenti){
     }
     if (!contieneAlmenoNecessarie(parolanodo))
         return  false;
-    bool xxxxxx=contieneAlmenoNecessarie(parolanodo);
     if (contieneCaratteriNonPresenti(parolanodo, nonPresenti, nNonPresenti))
         return  false;
 
     return true;
 
 }
-void recurAggComp(TreeNode* nodo,    char* nonPresenti, int nNonPresenti ){
-
-    if(found && !isFromMem)
+void aggCompDaAmmissibili(TreeNode* nodo, int nNonPresenti){
+    if(nodo==NULLO)
         return;
     chiaveToStringa(nodo->chiave, parolanodo);
-
-  /*  if(strcmp("AAbld",wordk)==0) {
-      printf("nodo:%s  sx:%s,  dx:%s\n" ,parolanodo, debugKEY(nodo->leftSon->chiave), debugKEY(nodo->rightSon->chiave));
-    //    attraversamentoOrdinato(testaComp);
-        //if(testaComp==NULLO || testaComp->father!=NULLO)
-    }*/
-
-    //chiaveToStringa(nodo->chiave, parolanodo);
-    bool ammissibile= ammissibileDaConfronto(nonPresenti,nNonPresenti);
-
-    //modifica compatibili
-    if(ammissibile && isFromMem){
+    if(ammissibileDaConfronto(nonPres,nNonPresenti)){//todo riscrivere condizione basate su int
         salvaInCompatibili(parolanodo);
-        if(!presenteTraComp(parolanodo))
-            printf("errore di salvataggio\n");
-        if(testaComp==NULLO)
-            printf("errore aggiornamento testaComp\n");
         compatibili++;
-      // printf("%s  aggiunta\n",parolanodo);
-
-    } else if(!ammissibile && !isFromMem) {
-       if(!presenteTraComp(parolanodo))
-           printf("non presente in compatibili %s \n",parolanodo);
-   //    else printf("presente per compatibili %s \n",parolanodo);
-
-       if (compatibili == 0) {
-           printf("errore filtri, 0 parole compatibili\n");
-           return ;
-       }
-       compatibili--;
-       found=true;
-       bool test=presenteTraComp(parolanodo);
-       cancellazioneNodoAlbero(nodo);
-       return;
-        //free(nodo);
-    } /*else if(ammissibile && !isFromMem)
-       printf("%s  mantenuta\n",parolanodo);
-       */
-    if(found && !isFromMem)
-        return;
-    if(nodo->rightSon!=NULLO && !found)
-        recurAggComp(nodo->rightSon,  nonPresenti, nNonPresenti);
-    if(nodo->leftSon!=NULLO &&!found)
-        recurAggComp(nodo->leftSon,   nonPresenti, nNonPresenti);
-
-
+    }
+    aggCompDaAmmissibili(nodo->leftSon,  nNonPresenti);
+    aggCompDaAmmissibili(nodo->rightSon, nNonPresenti);
 
 }
+void rimuoviDaCompatibili(TreeNode* nodo, int nNonPresenti ){
+    if(found || nodo==NULLO)
+        return;
+    chiaveToStringa(nodo->chiave,parolanodo);
+    if(!ammissibileDaConfronto(nonPres,nNonPresenti)){
+        cancellazioneNodoAlbero(nodo);
+        compatibili--;
+        found=true;
+        return;
+    }
+    rimuoviDaCompatibili(nodo->leftSon,nNonPresenti);
+    rimuoviDaCompatibili(nodo->rightSon,nNonPresenti);
+}
 
-
-void aggiornaCompatibili( char* nonPresenti, int nNonPresenti){
-    //draft senza ottimizzazioni
+void aggiornaCompatibili( int nNonPresenti){//tenere questi parametri fuori da stack<=ricorsione pesante
     if(compatibili == 0) {
-        isFromMem=true;
-        recurAggComp(treeHead,nonPresenti, nNonPresenti);
+        aggCompDaAmmissibili(treeHead, nNonPresenti);
     }else{
-        isFromMem=false;
+
         do{
             found=false;
-            recurAggComp(testaComp , nonPresenti, nNonPresenti);
+            rimuoviDaCompatibili(testaComp ,  nNonPresenti);
         }while(found);
     }
 
-    printf("%d \n", compatibili);
-    //attraversamentoOrdinato(testaComp);//fixme debug
+    printf("%d\n", compatibili);
+
 }
 bool rispettaTotalMask(char* string){
-    //bool accettabile=true;
     if(!contieneAlmenoNecessarie(string))
         return false;
-    int apparizioni[references->nUniche];//UUUUHH!
-    for (int i = 0; i < references->nUniche; ++i) {
-        apparizioni[i]=0;
-    }
     for (int i = 0; i < wordLen; ++i) {
         if(totalMask->ofPos[i].sureValue!=string[i] && totalMask->ofPos[i].sureValue!=0)
             return false;
@@ -803,6 +761,7 @@ void aggiornaCompatibiliNuovo(char* parolaNuova) {//l'ultimo elemento mancante
     if( *confInPartita ==0)
         return;
     if (rispettaTotalMask(parolaNuova) ) {
+        compatibili++;
         salvaInCompatibili(parolaNuova);
     }
 }
@@ -824,8 +783,6 @@ void aggiungiAmmissibili(){
                 i++;
             } while (in != '\n' && i < wordLen);
             wordk[wordLen]='\0';
-            if(strcmp("gDJL", wordk)==0)
-                printf("debug eccoci");//debug per qualche ragione arriva una seconda volta sto schifo
 
             salvaAmmissibile(wordk);
             aggiornaCompatibiliNuovo(wordk);
@@ -837,6 +794,8 @@ void aggiungiAmmissibili(){
         }
     } while (bo==1);//fixme possono apparire comandi diversi da inserisci_fine?????????
     //legge inserisce_fine
+    if(nPartite==0)
+        return;
     char in;
     do {
         in =(char) getc(INPUT);
@@ -926,7 +885,7 @@ void initPartita(){
     charInfo *arrInfo= malloc(sizeof (charInfo)*(cc+1));
     for (int i = 0; i < cc+1; ++i) {
         arrInfo[i].appears=0;
-        arrInfo[i].letter=letSing[i];
+       // arrInfo[i].letter=letSing[i];
         arrInfo[i].isMax=0;
     }
     totalMask->ofChars=arrInfo;
@@ -973,7 +932,7 @@ void initSuccessivi(){//todo qualcosa di molto brutto accade qui da qualche part
     //charInfo *arrInfo=totalMask->ofChars;
     for (int i = 0; i < cc+1; ++i) {
         totalMask->ofChars[i].appears=0;
-        totalMask->ofChars[i].letter=references->appearing[i];
+       // totalMask->ofChars[i].letter=references->appearing[i];
         totalMask->ofChars[i].isMax=0;
     }
     nPartite++;
@@ -993,7 +952,7 @@ bool accConfrontoLettera(int pos,char let1,char let2){
     return let1!=let2;
 }
 bool contieneAlmenoNecessarie(const char *parolaDelNodo){
-    bool ok=true;//todo presenti deve essere un array ordinato come references.uniche
+    bool ok=true;
     int app;
     for (int i = 0; i < references->nUniche; ++i) {
         app=0;
@@ -1029,8 +988,8 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
     }
     int corrette=0;
     //todo controlla maschera agg per "-s9k0"
-    if(strcmp("Cbbbd", parola)==0)
-        printf("debug \n");
+    //if(strcmp("Cbbbd", parola)==0)
+      //  printf("debug \n");
     int nNP=0;
     for(int i=0; i < wordLen; i++){
         nonPres[i]='0';
@@ -1040,7 +999,7 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
           //  salvaPres[corrette]=parola[i];
             if(pos>=0)
                 presenti[pos]++;
-            else printf("");//lmao
+            else NULLO->father=NULLO;//lmao
             corrette++;
             totalMask->ofPos[i].sureValue=parola[i];
         }else if(pos==-1){
@@ -1077,7 +1036,7 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
     for (int i = 0; i < references->nUniche; ++i) {
         int pres=presenti[i];
         //charInfo *tmp=&totalMask->ofChars[i];
-        totalMask->ofChars[i].letter=references->appearing[i];
+        //totalMask->ofChars[i].letter=references->appearing[i];
         if(totalMask->ofChars[i].appears< pres)
             totalMask->ofChars[i].appears= pres;
         if (references->numberOfApp[i] < pres) {
@@ -1091,7 +1050,7 @@ void confronto(char* parola){//fixme, qualcosa non funziona, capire perché
         return;
     }
     printf("%s\n",mascheraAt);
-    aggiornaCompatibili(  nonPres, nNP);
+    aggiornaCompatibili(   nNP);
 
 }
 
@@ -1178,7 +1137,7 @@ void* eseguiComando(){
     buf[i]='\0';
     void (*fnPointer)();
    // printf("+%s", buf );
-    if(strcmp("inserisci_inizio", buf)==0){
+    if(strcmp("inserisci_inizio", buf)==0){//ridefinsici compare x questo caso
         fnPointer=aggiungiAmmissibili;
     }
     else if(strcmp("stampa_filtrate",buf)==0) {
@@ -1193,12 +1152,12 @@ void* eseguiComando(){
 }
 
 int main(){
-    target= malloc(wordLen+1);
+    //target= malloc(wordLen+1);
 
     //testAlbero();
 
     if(FROMFILE>0){
-        if ((fp = fopen("C:/Users/User/CLionProjects/api-2022-word-checker/open_testcases/test3.txt", "r")) == NULL){
+        if ((fp = fopen("C:/Users/User/CLionProjects/api-2022-word-checker/open_testcases/slide.txt", "r")) == NULL){
             printf("File cannot open");
             exit(1);
         }
@@ -1209,12 +1168,14 @@ int main(){
 
     wordk= malloc(wordLen+1);
     wordk[wordLen]='\0';
+
     NULLO= malloc(sizeof(TreeNode));
     NULLO->father=NULLO;
     NULLO->leftSon=NULLO;
     NULLO->rightSon=NULLO;
     NULLO->isBlack=true;
     NULLO->chiave=NULLKEY;//nullkey
+
     confInPartita= malloc(sizeof (int));
     *confInPartita=0;
     char input[5];
@@ -1225,8 +1186,6 @@ int main(){
         in=(char)getc(INPUT);
         i++;
     }
-    salvaPres= malloc(wordLen);
-    salvaPres[wordLen]='\0';
     wordLen= atoi(input);
 
     testaComp= malloc(sizeof(TreeNode));
@@ -1251,7 +1210,8 @@ int main(){
     aggiungiAmmissibili();
 
     //debugControlloAlbero(treeHead);
-    nuovaPartita();//esegui comando nel caso avvenga roba prima di nuova partita => inizializzare roba di init prima
+    void (*exec)()= eseguiComando();//esegui comando nel caso avvenga roba prima di nuova partita => inizializzare roba di init prima
+    exec();
     char rest= (char)getc(INPUT);
     while (rest=='+'){
          void (*ptr)()=eseguiComando();
