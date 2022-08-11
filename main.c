@@ -92,7 +92,7 @@ FILE* fp;
 refInfo * references;
 char* mascheraAt;
 int nPartite;
-char* countConfronto;
+char* countConfronto;//serve per confronti su totalMask
 //------------------input
 
 char *wordk;
@@ -1401,7 +1401,7 @@ int main(){
     }
     riciclati=0;
     nPartite=0;
-
+ //
     countConfronto= malloc(64 * sizeof(char));
     for (int i = 0; i < 64; ++i) {
         countConfronto[i]=0;
@@ -1419,13 +1419,23 @@ int main(){
     input[4]='\0';
     wordLen= atoi(input);
     lineS++;
-    nodeWaitingRoom= malloc(REMOVEDBLOCK* sizeof(TreeNode*));
+
+    //allocazione buffer parole di lunghezza wordlen
     wordk= malloc((wordLen+1)* sizeof(char ));
     wordk[wordLen]='\0';
 
+    //allocazione per batch
+    nodeWaitingRoom= malloc(REMOVEDBLOCK* sizeof(TreeNode*));
     bloccoDiMalloc= malloc(ADDEDBLOCK* sizeof (TreeNode));
     bloccoDiStringNU= malloc(ADDEDBLOCK* wordLen*sizeof(char));
 
+    //allocazione riferimenti constraint
+    nuoviQuant= malloc(sizeof(struct constQuanList));
+    nuoviPos= malloc(sizeof(struct constPosList));
+    maggiorePrecQuant= malloc(sizeof(struct constQuanList));
+    maggiorePrecedenzaPos= malloc(sizeof(struct constPosList));//todo implementa creazione di constraint in funzione confronto!!!
+
+    //allocazione riferimenti alberi
     NULLO= malloc(sizeof(TreeNode));
     NULLO->father=NULLO;
     NULLO->leftSon=NULLO;
@@ -1443,7 +1453,7 @@ int main(){
     testaComp=nullHead;
     treeHead=nullHead;
 
-
+    //allocazione informazioni parola di riferimento
     orderedRef= malloc((wordLen+1)* sizeof(char ));
     orderedRef[wordLen]='\0';
     riferimento=malloc((wordLen+1)* sizeof(char ));
