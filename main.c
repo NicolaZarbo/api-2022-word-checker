@@ -25,6 +25,30 @@ bool presenteTraAmmissibili(char* parola);
 
 //----------------------------strutture
 
+enum constrType{presInPosizione,quantiPresenti};
+typedef struct constraintQuant{
+    void (*con)();
+    short precedenza;
+    char lettera;
+    short quant;
+    bool isMax;
+} quantCon;
+typedef struct conPos{
+    void  (*con)();
+    short precedenza;
+    char lettera;
+    short pos;
+    bool appare;
+}posCon;
+struct constPosList{
+    posCon * nnd;
+    struct constPosList *succ;
+};
+struct constQuanList{
+    quantCon * qnd;
+    struct constQuanList *succ;
+};
+
 typedef struct maskOfPos{
     char sureValue;
     char* notAppear;
@@ -41,12 +65,21 @@ typedef struct refInfo{
     char* appearing;
     int* numberOfApp;
     int nUniche;
+    char* appariscenti;
 } refInfo;
 
 void salvaInCompatibili(char *parola);
 
 //----------------globali
 megaMask *totalMask;
+struct constPosList *maggiorePrecedenzaPos;
+int dimMPP;
+struct constPosList *nuoviPos;
+int dimNP;
+struct constQuanList *maggiorePrecQuant;
+int dimMPQ;
+struct constQuanList *nuoviQuant;
+int dimNQ;
 char *nonPres;
 int salvate;
 int compatibili;//relativo alla partita
@@ -59,6 +92,7 @@ FILE* fp;
 refInfo * references;
 char* mascheraAt;
 int nPartite;
+char* countConfronto;
 //------------------input
 
 char *wordk;
@@ -84,6 +118,7 @@ TreeNode *nullHead;
 TreeNode *treeHead;
 TreeNode *testaComp;
 
+bool constraintRun(const char * parola);
 void attraversamentoOrdinato(TreeNode* vertice);
 void recycleIsGood(TreeNode* rimosso);
 bool rispettaTotalMask(char* string);
@@ -106,14 +141,15 @@ void copiaParola(char* dest, const char*from){
 }
 
 bool stringMaggiore(const char* primo, const char* secondo){
-    for (int i = 0; i < wordLen; ++i) {
+    return strncmp(primo, secondo, wordLen)>0;
+   /* for (int i = 0; i < wordLen; ++i) {
         if(primo[i]!=secondo[i]) {
             if (primo[i] > secondo[i])
                 return true;
             else return false;
         }
     }
-    return false;
+    return false;*/
 
 }
 bool stringUguale(const char* primo, const char* secondo) {
@@ -747,17 +783,24 @@ int leggiParolaPerConfronto(){
 }
 
 bool treeModified;
-bool rispettaTotalMask(char* string){//erore edge case
-    for (int i = 0; i < wordLen; ++i) {
-        if(totalMask->ofPos[i].sureValue!=string[i] && totalMask->ofPos[i].sureValue!=0)
-            return false;
-        if(totalMask->ofPos[i].notAppear[mappaCharToInt64(string[i])]==1)
+bool rispettaTotalMask(char* string){//todo scrivi versione che tiene conto di cosa non ricontrollare e usa solo costraint nuovi
+    for(int i=0;i<wordLen;i++) {
+        if (totalMask->ofPos[i].notAppear[mappaCharToInt64(string[i])] == '1')
             return false;
     }
-    if(!contieneAlmenoNecessarie(string))
+    //bool ok=true;
+    for (int i = 0; i < wordLen; ++i) {
+        //countConfronto[mappaCharToInt64(string[i])]--;
+        if (totalMask->ofPos[i].sureValue != string[i] && totalMask->ofPos[i].sureValue != 0)
+            return false;
+    }
+    if(!contieneAlmenoNecessarie(string)) {
+        memset(countConfronto, 0, 64);
         return false;
+    }
+    memset(countConfronto, 0, 64);
     return true;
-
+    //countConfronto[mappaCharToInt64(string[i])]--;
 }
 bool ammissibileDaConfronto(char* damn,char* nonPresenti, int nNonPresenti){
     for (int j = 0; j < wordLen; ++j) {
@@ -805,19 +848,24 @@ void removalOfSelected(){
 void aggCompDaAmmissibili(TreeNode* nodo ){
     if(nodo==NULLO)
         return;
-    //chiaveToStringa(nodo->chiave, parolanodo);
-    if(ammissibileDaConfronto(nodo->nParola,nonPres,nNonPr)){
-        isFromNuInserisci=false;
-        salvaInCompatibili(nodo->nParola);
-        compatibili++;
-    }
+    if(isFromNuInserisci){
+        if(rispettaTotalMask(nodo->nParola)){
+            isFromNuInserisci=false;
+            salvaInCompatibili(nodo->nParola);
+            compatibili++;
+        }
+    }else  if(constraintRun(nodo->nParola)){
+            isFromNuInserisci=false;
+            salvaInCompatibili(nodo->nParola);
+            compatibili++;
+        }
     aggCompDaAmmissibili(nodo->leftSon);
     aggCompDaAmmissibili(nodo->rightSon);
 }
 void rimuoviDaCompatibili(TreeNode* nodo ){
     if(treeModified || nodo == NULLO)
         return;
-    if(!ammissibileDaConfronto(nodo->nParola,nonPres,nNonPr)){
+    if(!constraintRun(nodo->nParola)){// !ammissibileDaConfronto(nodo->nParola,nonPres,nNonPr)){
         nodeWaitingRoom[removed]=nodo;
         removed++;
         compatibili--;
@@ -831,8 +879,22 @@ void rimuoviDaCompatibili(TreeNode* nodo ){
     rimuoviDaCompatibili(nodo->rightSon);
 }
 
+void generaOscartaNuoviCon(){
+    //svuota nuovi
+    for (int i = 0; i < wordLen; ++i) {
+        if(mascheraAt[i]!='+'){}
+            //se non già presente e se non c'è costraint con già precedenza
+            //crea constr e aggiungi a nuovi
+        else{}//crea constr di presenza se non c'era già
+
+        //prendere da confronto il numero di presenze o ricavare
+        //se non esiste già con precedenza maggiore o uguale mettere in nuovi
+    }
+
+}
 void aggiornaCompatibili( int nNonPresenti){
     nNonPr=nNonPresenti;
+    generaOscartaNuoviCon();
     if(compatibili == 0) {
         aggCompDaAmmissibili(treeHead);
     }else{
@@ -937,7 +999,7 @@ void initPartita(){
     for (int i = 0; i < wordLen; ++i) {
         char *initAr= malloc(64);//fixme make of bits
         for (int j = 0; j < 64; ++j) {
-            initAr[j]=0;
+            initAr[j]='0';
         }
         posMaschera[i].notAppear=initAr;
         posMaschera[i].sureValue=0;
@@ -977,9 +1039,8 @@ void initSuccessivi(){
     //rinnovo compatibili
     testaComp=nullHead;
     for (int i = 0; i < wordLen; ++i) {
-        char *initAr=totalMask->ofPos[i].notAppear;
         for (int j = 0; j < 64; ++j) {
-            initAr[j]=0;
+            totalMask->ofPos[i].notAppear[j]='0';
         }
         totalMask->ofPos[i].sureValue=0;
     }
@@ -1020,7 +1081,26 @@ bool accConfrontoLettera(int pos,char let1,char let2){
     return let1!=let2;
 }
 bool contieneAlmenoNecessarie(const char *parolaDelNodo){
-    bool ok=true;
+    //bool ok=true;
+    for (int i = 0; i < wordLen; ++i) {
+        countConfronto[mappaCharToInt64(parolaDelNodo[i])]++;
+    }
+    for (int i = 0; i < references->nUniche; ++i) {
+        if(totalMask->ofChars[i].appears > countConfronto[mappaCharToInt64(references->appearing[i])])
+            return false;
+    }
+    for (int i = 0; i < references->nUniche; ++i) {
+        if(totalMask->ofChars[i].isMax==1 && countConfronto[mappaCharToInt64(references->appearing[i])] != totalMask->ofChars[i].appears)
+            return false;
+    }
+
+    return true;
+
+
+
+
+
+
     int app;
     for (int i = 0; i < references->nUniche; ++i) {
         app=0;
@@ -1029,9 +1109,9 @@ bool contieneAlmenoNecessarie(const char *parolaDelNodo){
                 app++;
         }
         if(!((app>=totalMask->ofChars[i].appears && totalMask->ofChars[i].isMax==0) || (totalMask->ofChars[i].isMax==1 && app==totalMask->ofChars[i].appears)))
-            ok=false;
+             return false;
     }
-    return ok;
+    return true;
 }
 bool contieneCaratteriNonPresenti(const char* parola, const char* nonPresenti, int quanteNP){
     for (int i = 0; i < wordLen; ++i) {
@@ -1068,7 +1148,7 @@ void confronto(){//fixme, qualcosa non funziona, capire perché
         }else if(pos==-1){
             nonPres[nNP]=wordk[i];
             nNP++;
-            totalMask->ofPos[i].notAppear[mappaCharToInt64(wordk[i])]=1;
+            totalMask->ofPos[i].notAppear[mappaCharToInt64(wordk[i])]='1';
         }
     }
     nonPres[nNP]='\0';
@@ -1077,32 +1157,42 @@ void confronto(){//fixme, qualcosa non funziona, capire perché
         if (prs > 0) {
             int pos = posOfLetterInReferences(wordk[i]);
             if (wordk[i] != riferimento[i]) {
-                if(pos>=0 && pos<wordLen){
+                if(pos>=0 && pos<wordLen){//inutile se pres >o pos è valido
                     presenti[pos]++;
                     if (prs >= presenti[pos]){
                         //corrette++; nn serve
                         mascheraAt[i] = '|';
-                        totalMask->ofPos[i].notAppear[mappaCharToInt64(wordk[i])]=1;
+                        totalMask->ofPos[i].notAppear[mappaCharToInt64(wordk[i])]='1';
                     } else { mascheraAt[i] = '/';
-                        for (int j = 0; j < wordLen; ++j) {
-                            totalMask->ofPos[j].notAppear[mappaCharToInt64(wordk[i])]=1;
-                        }
+                        //se ne sono gia apparse troppe
+                            totalMask->ofPos[i].notAppear[mappaCharToInt64(wordk[i])]='1';
                     }
                 }
                 else { mascheraAt[i] = '/';
                     for (int j = 0; j < wordLen; ++j) {
-                        totalMask->ofPos[j].notAppear[mappaCharToInt64(wordk[i])]=1;
+                        totalMask->ofPos[j].notAppear[mappaCharToInt64(wordk[i])]='1';//okk perche non appare mai
                     }
                 }
             }
         }else {
             mascheraAt[i] = '/';
             for (int j = 0; j < wordLen; ++j) {
-                totalMask->ofPos[j].notAppear[mappaCharToInt64(wordk[i])]=1;
+                totalMask->ofPos[j].notAppear[mappaCharToInt64(wordk[i])]='1';
             }
 
         }
     }
+    //creazione nuovi costraint
+    // es: in pos 5 -> "J" => creo costraint pocCon ->(let "j", pos "5" , precedenza 2, orIsIt=true,
+    // li creo nei stessi posti in cui aggiorno total mask e li metto nella lista dei nuovi
+
+
+    //salvataggio di cosntraint accettabili confrontandoli con i vecchi di val piu alto
+   // es cont: confronto O(n^2) tra i vecchi con valore più alto e i nuovi
+   // se creo i posCon mentre aggiorno la maschera posso confrontarli con totalmask direttamente
+   // ovvero if(totalMask->ofPos[j].appear!="0") non genero constraint per quella posizione
+   // se avrei generato un constraint di notAppear prima vede se era già segnato in totalMask=>corrisponde al aver gia fatto il filtraggio su quel constr.
+   // per i quant pos li confronto con quello che stava in totalMask->ofChars[i]
 
     // aggiornamento maschera partita
     for (int i = 0; i < references->nUniche; ++i) {
@@ -1128,11 +1218,52 @@ void confronto(){//fixme, qualcosa non funziona, capire perché
 
 }
 
+bool esattamenteNlett(const char* parola, char lett, int N){
+    int app=N;
+    for (int i = 0; i < wordLen; ++i) {
+        if (parola[i]==lett)
+            app--;
+        if(app==0)
+            return true;
+    }
+    return(app==0);
+}
+
+bool almenoNlett(const char* parola, char lett, int N){
+    int app=N;
+    for (int i = 0; i < wordLen; ++i) {
+        if (parola[i]==lett)
+            app--;
+        if(app==0)
+            return true;
+    }
+    return(app<=0);
+}
 
 
+bool presenteCorretto(const char*parola,char c, int pos, bool orIsIt){
+    if(orIsIt)return parola[pos]==c;
+    return parola[pos]!=c;
+}
+bool constraintRun(const char * parola){
+    struct constPosList*nd=nuoviPos;
+    for (int i = 0; i < dimNP; ++i) {//modifica in while succ!=null
+        if(! presenteCorretto(parola,nd->nnd->lettera,nd->nnd->pos,nd->nnd->appare) )
+         return false;
+        nd=nd->succ;
+    }
+    struct constQuanList* nodo=nuoviQuant;
+    for (int i = 0; i < dimNQ; ++i) {
+        if(nodo->qnd->isMax ){
+            if(!esattamenteNlett(parola,nodo->qnd->lettera,nodo->qnd->quant)) {
+                return false; }
 
-
-
+        }else if(!almenoNlett(parola,nodo->qnd->lettera,nodo->qnd->quant)) {
+            return false; }
+        nodo=nuoviQuant->succ;
+    }
+    return true;
+}
 
 
 //------------------comandi
@@ -1271,6 +1402,10 @@ int main(){
     riciclati=0;
     nPartite=0;
 
+    countConfronto= malloc(64 * sizeof(char));
+    for (int i = 0; i < 64; ++i) {
+        countConfronto[i]=0;
+    }
     confInPartita= malloc(sizeof (int));
     *confInPartita=0;
     char input[5];
