@@ -1122,8 +1122,25 @@ bool contieneCaratteriNonPresenti(const char* parola, const char* nonPresenti, i
     }
     return false;
 }
-void creaCostraintSureValue() {} 
-void creaCostraintNotPresent() {} 
+void creaCostraintSureValue(char lettera, short pos ) {
+     totalMask->ofPos[pos].sureValue=lettera;
+                posConstList.succ=malloc(sizeOf(posConstList*));
+                posConstList.succ.ndm.letter==lettera;
+                posConstList.succ.ndm.precedenza=1;
+                posConstList.succ.ndm.orIsIt=true;
+                posConstList=posConstList.succ;
+                dimNP++;
+} 
+} 
+void creaCostraintNotPresent(char lettera, short pos ) {
+     totalMask->ofPos[pos].notAppear[mapChaToInt64(lettera)] ='1' ;
+                posConstList.succ=malloc(sizeOf(posConstList*));
+                posConstList.succ.ndm.letter==lettera;
+                posConstList.succ.ndm.precedenza=1;
+                posConstList.succ.ndm.orIsIt=false;
+                posConstList=posConstList.succ;
+                dimNP++;
+}
 void creaCostraintQuant(bool isMax) {} 
 /**
  * crea nuova maschera e aggiorna quella completa
