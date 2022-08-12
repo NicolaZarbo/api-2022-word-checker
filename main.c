@@ -1139,12 +1139,19 @@ void confronto(){//fixme, qualcosa non funziona, capire perché
         nonPres[i]='0';
         int pos= posOfLetterInReferences(wordk[i]);
         if(wordk[i] == riferimento[i]){
+            If(totalMask.ofPos[i].sure!=word[i]){
+                totalMask->ofPos[i].sureValue=wordk[i];
+                posConstList.succ=malloc(sizeOf(posConstList*));
+                posConstList.succ.ndm.letter==wordk[i];
+                posConstList.succ.ndm.precedenza=1;
+                posConstList.succ.ndm.orIsIt=true;
+} 
             mascheraAt[i]='+';
             if(pos>=0)
                 presenti[pos]++;
             else NULLO->father=NULLO;//lmao
             corrette++;
-            totalMask->ofPos[i].sureValue=wordk[i];
+            
         }else if(pos==-1){
             nonPres[nNP]=wordk[i];
             nNP++;
