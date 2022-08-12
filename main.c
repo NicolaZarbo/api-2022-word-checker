@@ -1122,7 +1122,9 @@ bool contieneCaratteriNonPresenti(const char* parola, const char* nonPresenti, i
     }
     return false;
 }
-
+void creaCostraintSureValue() {} 
+void creaCostraintNotPresent() {} 
+void creaCostraintQuant(bool isMax) {} 
 /**
  * crea nuova maschera e aggiorna quella completa
  * @param parola parola da confrontare con riferimento
