@@ -3,8 +3,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-#define REMOVEDBLOCK 300
-#define ADDEDBLOCK 10
+#define ADDEDBLOCK 20
 
 void nuovaPartita();
 int leggiParolaPerConfronto();
@@ -46,7 +45,6 @@ typedef struct refInfo{
     int nUniche;
 } refInfo;
 
-void salvaInCompatibili(char *parola);
 
 //----------------globali
 megaMask *totalMask;
@@ -68,13 +66,16 @@ int *confInPartita;//confronti fatti
 refInfo * references;
 char* mascheraAt;
 int nPartite;
+bool treeModified;
+bool aggiustato;
+char boi;
+
 char* countConfronto;//serve per confronti su totalMask
 //------------------input
 
 char *wordk;
 // ----------------
 //----debug
-int lineS;
 
 
 
@@ -92,17 +93,20 @@ TreeNode  *NULLO;
 TreeNode *nullHead;
 TreeNode *treeHead;
 TreeNode *testaComp;
-
+TreeNode * minOfSubTree(TreeNode* nodo);
 bool constraintRun(const char * parola);
-void attraversamentoOrdinato(TreeNode* vertice);
 void recycleIsGood(TreeNode* rimosso);
 bool rispettaTotalMask(char* string);
+void innestaSopra(TreeNode* innesto, TreeNode* nodoOriginale, TreeNode* radice);
+void deAllocaIterativo(TreeNode*nodo);
+void recreateTheTree();
 
-void customPrinter(char* word){
+//-------------------Utili
+void customPrinter(const char* word){
     for (int i = 0; i < wordLen; ++i) {
-        printf("%c",word[i]);
+        putchar_unlocked(word[i]);
     }
-    printf("\n");
+    putchar_unlocked('\n');
 
 }
 void copiaParola(char* dest, const char*from){
@@ -111,18 +115,6 @@ void copiaParola(char* dest, const char*from){
     }
 }
 
-bool stringMaggiore(const char* primo, const char* secondo){
-    return strncmp(primo, secondo, wordLen)>0;
-   /* for (int i = 0; i < wordLen; ++i) {
-        if(primo[i]!=secondo[i]) {
-            if (primo[i] > secondo[i])
-                return true;
-            else return false;
-        }
-    }
-    return false;*/
-
-}
 bool stringUguale(const char* primo, const char* secondo) {
     for (int i = 0; i < wordLen; ++i) {
         if (primo[i] != secondo[i]) {
@@ -131,7 +123,7 @@ bool stringUguale(const char* primo, const char* secondo) {
     }
     return true;
 }
-
+//----------------
 void deAllocaIterativo(TreeNode*nodo){
     TreeNode *attuale=nodo;
     TreeNode *precedente=NULLO;
@@ -142,7 +134,6 @@ void deAllocaIterativo(TreeNode*nodo){
                 successivo=attuale->leftSon;
             else{
                 recycleIsGood(attuale);
-                //ee(nodo);
                 if(attuale->rightSon!=NULLO)
                     successivo=attuale->rightSon;
                 else successivo=attuale->father;
@@ -150,7 +141,6 @@ void deAllocaIterativo(TreeNode*nodo){
 
         } else if(precedente==attuale->leftSon){
             recycleIsGood(attuale);
-            //free(nodo);
 
             if(attuale->rightSon!=NULLO)
                 successivo=attuale->rightSon;
@@ -160,28 +150,15 @@ void deAllocaIterativo(TreeNode*nodo){
         attuale=successivo;
     }
 }
-void deAllocaCompatibili(TreeNode *nodo){//rendere non ricorsivo
-    if(nodo==NULLO){
-        printf("errore di de-allocazione");
-        return;
-    }
-    if(nodo->leftSon!=NULLO)
-         deAllocaCompatibili(nodo->leftSon);
-    if(nodo->rightSon!=NULLO)
-        deAllocaCompatibili(nodo->rightSon);
-    if(nodo==nullHead || nodo==testaComp)
-        return;
-    recycleIsGood(nodo);
-}
 void innestaSopra(TreeNode* innesto, TreeNode* nodoOriginale, TreeNode* radice){
     if(nodoOriginale != radice){
         if(nodoOriginale == nodoOriginale->father->leftSon)
             nodoOriginale->father->leftSon=innesto;
         else nodoOriginale->father->rightSon=innesto;
-    }else if(radice==testaComp){
+    }else if(radice==testaComp){// lo uso solo per compatibili?!
         testaComp=innesto;
-    } else treeHead=innesto;
-    if(innesto!=NULLO)
+    }
+   // if(innesto!=NULLO)fixme eeeeeeeeeeee oppure no, è un problema dare a NULLO un padre? Non sembra
         innesto->father=nodoOriginale->father;
 }
 void ruotaSX(TreeNode *nodo, TreeNode* testa){
@@ -191,7 +168,7 @@ void ruotaSX(TreeNode *nodo, TreeNode* testa){
         exFiglio->leftSon->father=nodo;
     exFiglio->father=nodo->father;
 
-    if(nodo->father==NULLO) {//aggiorna testa dell'albero???
+    if(nodo->father==NULLO) {
         if (testa == treeHead)
             treeHead = exFiglio;
         else testaComp=exFiglio;
@@ -210,7 +187,7 @@ void ruotaDX(TreeNode *nodo, TreeNode* testa){
     if(exFiglio->rightSon != NULLO)
         exFiglio->rightSon->father=nodo;
     exFiglio->father=nodo->father;
-    if(nodo->father==NULLO) {//aggiorna testa dell'albero
+    if(nodo->father==NULLO) {
         if (testa == treeHead)
             treeHead = exFiglio;
         else testaComp=exFiglio;
@@ -235,14 +212,12 @@ void sistemaInserimento(TreeNode* nuNodo, TreeNode *testa) {
                 nonno->leftSon->isBlack = true;
                 nonno->isBlack = false;
                 nuNodo = nonno;
-                //if(padre->isBlack)
-                  //  break;
+
             } else {
-                if (nuNodo == nuNodo->father->rightSon) {//caso 2
+                if (nuNodo == nuNodo->father->rightSon) {//caso 2?
                     nuNodo = nuNodo->father;
                     ruotaSX(nuNodo,testa);
-                   // if(nuNodo->father->isBlack)//???
-                     //   break;
+
                 }
                 nuNodo->father->father->isBlack=false;//nonno->isBlack = false;//caso 3?//??
                 nuNodo->father->isBlack=true;//nuNodo->father->isBlack = true;
@@ -250,7 +225,6 @@ void sistemaInserimento(TreeNode* nuNodo, TreeNode *testa) {
             }
         } else{
             bool nonnoNero=true;
-            //if(nonno->leftSon!=NULLO)
                 nonnoNero=nonno->leftSon->isBlack;
             if(!nonnoNero){
                 nonno->rightSon->isBlack = true;
@@ -272,32 +246,14 @@ void sistemaInserimento(TreeNode* nuNodo, TreeNode *testa) {
 
     }
     testa->isBlack=true;
-
-
 }
-TreeNode * trovaNodoDaComp(char* nParola){//keyInt chiave
-    TreeNode *nodo=testaComp;
-    while (nodo!=NULLO){
-        if(strncmp(nParola, nodo->nParola,wordLen)>0)//chiave>nodo->chiave)
-            nodo=nodo->rightSon;
-        else if(strncmp(nodo->nParola,nParola,wordLen)>0)
-            nodo=nodo->leftSon;
-        else return nodo;
+//confronto str maggiore dal nome infelice
+bool strPers(const char*par1, const char*par2){
+    for (int i = 0; i < wordLen; ++i) {
+        if(par1[i]>par2[i]) return true;
+        else if(par2[i]>par1[i]) return false;
     }
-    printf("error finding node");
-    return NULL;
-}
-TreeNode * trovaNodoDaMEM(char* nParola){//keyInt chiave
-    TreeNode *nodo=treeHead;
-    while (nodo!=NULLO){
-        if(strncmp(nParola, nodo->nParola,wordLen)>0)//chiave>nodo->chiave)
-            nodo=nodo->rightSon;
-        else if(strncmp(nodo->nParola,nParola,wordLen)>0)
-            nodo=nodo->leftSon;
-        else return nodo;
-    }
-    printf("error finding node");
-    return NULLO;
+    return false;
 }
 int aggiuntiNodi;
 int aggiunteStringhe;
@@ -323,14 +279,8 @@ void aggiungiNodoAMem(const char* nuParola){
     if(riciclati>0){
         //ottiene blocco di memoria riciclato
         nuNodo=mutGarbodor();
-        //allocazione stringa nodo da blocco di allocazione
-        nuNodo->nParola=&bloccoDiStringNU[aggiunteStringhe * wordLen];
-        aggiunteStringhe++;
-        if(aggiunteStringhe== ADDEDBLOCK){
-            bloccoDiStringNU= malloc(sizeof(char)*wordLen*ADDEDBLOCK);//necessario, i blocchi riciclati condividono memoria con blocchi nel tree principale
-            aggiunteStringhe=0;
-        }
-    }else {
+    }
+    else {
         //allocazione nodo da blocco di allocazione
         nuNodo = &bloccoDiMalloc[aggiuntiNodi];
         aggiuntiNodi++;
@@ -338,14 +288,12 @@ void aggiungiNodoAMem(const char* nuParola){
             bloccoDiMalloc = malloc(sizeof(TreeNode) * ADDEDBLOCK);
             aggiuntiNodi = 0;
         }
-        //allocazione stringa nodo da blocco di allocazione
-        nuNodo->nParola=&bloccoDiStringNU[aggiunteStringhe * wordLen];
-        aggiunteStringhe++;
-        if(aggiunteStringhe== ADDEDBLOCK){
-            bloccoDiStringNU= malloc(sizeof(char)*wordLen*ADDEDBLOCK);
-            aggiunteStringhe=0;
-        }
-
+    }//allocazione stringa nodo da blocco di allocazione
+    nuNodo->nParola=&bloccoDiStringNU[aggiunteStringhe * wordLen];
+    aggiunteStringhe++;
+    if(aggiunteStringhe== ADDEDBLOCK){
+        bloccoDiStringNU= malloc(sizeof(char)*wordLen*ADDEDBLOCK);
+        aggiunteStringhe=0;
     }
 
     //scrittura della parola nel nodo
@@ -360,7 +308,7 @@ void aggiungiNodoAMem(const char* nuParola){
 
     while(discensore!=NULLO){
         padre=discensore;
-        if(strncmp(nuNodo->nParola,discensore->nParola,wordLen)>0)//nuNodo->chiave>discensore->chiave
+        if(strPers(nuNodo->nParola,discensore->nParola))//nuNodo->chiave>discensore->chiave
             discensore= discensore->rightSon;
         else discensore=discensore->leftSon;
     }
@@ -372,7 +320,7 @@ void aggiungiNodoAMem(const char* nuParola){
         nuNodo->isBlack=true;
         return;
     }
-    else if(stringMaggiore(nuNodo->nParola,padre->nParola))//nuNodo->chiave>padre->chiave
+    else if(strPers(nuNodo->nParola,padre->nParola))
         padre->rightSon=nuNodo;
     else padre->leftSon=nuNodo;
 
@@ -387,12 +335,12 @@ void aggiungiNodoPerCompatibili(char *nuParola){
     TreeNode *nuNodo;
     if(riciclati>0){
         nuNodo=mutGarbodor();
-    }else {
+    }
+    else {
         nuNodo = &bloccoDiMalloc[aggiuntiNodi];
         aggiuntiNodi++;
         if (aggiuntiNodi == ADDEDBLOCK) {
             bloccoDiMalloc = malloc(sizeof(TreeNode) * ADDEDBLOCK);
-            //bloccoDiStringNU= malloc(sizeof(char)*wordLen*ADDEDBLOCK);
             aggiuntiNodi = 0;
         }
     }
@@ -410,7 +358,7 @@ void aggiungiNodoPerCompatibili(char *nuParola){
 
     while(discensore!=NULLO){
         padre=discensore;
-        if(strncmp(nuNodo->nParola,discensore->nParola,wordLen)>0)//nuNodo->chiave>discensore->chiave
+        if(strPers(nuNodo->nParola,discensore->nParola))//nuNodo->chiave>discensore->chiave
             discensore= discensore->rightSon;
         else discensore=discensore->leftSon;
     }
@@ -422,7 +370,7 @@ void aggiungiNodoPerCompatibili(char *nuParola){
         nuNodo->isBlack=true;
         return;
     }
-    else if(strncmp(nuNodo->nParola,padre->nParola,wordLen)>0)//nuNodo->chiave>padre->chiave
+    else if(strPers(nuNodo->nParola,padre->nParola))//nuNodo->chiave>padre->chiave
         padre->rightSon=nuNodo;
     else padre->leftSon=nuNodo;
 
@@ -438,6 +386,68 @@ TreeNode * minOfSubTree(TreeNode* nodo) {
     }
     return nodo;
 }
+/*
+void sistemaDopoCancellazione(TreeNode *x){
+    treeModified=true;
+    TreeNode *frat;
+   while(x!=testaComp && x->isBlack){
+        if(x==x->father->leftSon){
+            frat=x->father->rightSon;
+            if(frat->isBlack!=true){
+                frat->isBlack=true;
+                x->father->isBlack=false;
+                ruotaSX(x->father,testaComp);
+                frat=x->father->rightSon;
+            }
+            if(frat->leftSon->isBlack && frat->rightSon->isBlack){
+                frat->isBlack=false;
+                x=x->father;
+            }
+            else{
+                if(frat->rightSon->isBlack){
+                    frat->leftSon->isBlack=true;
+                    frat->isBlack=false;
+                    ruotaDX(frat,testaComp);
+                    frat=x->father->rightSon;         
+                }
+                frat->isBlack=x->father->isBlack;
+                x->father->isBlack=true;
+                frat->rightSon->isBlack=true;
+                ruotaSX(x->father, testaComp);
+                x=testaComp;
+            }
+            
+        }else{
+                frat=x->father->leftSon;
+                if(frat->isBlack!=true){
+                    frat->isBlack=true;
+                    x->father->isBlack=false;
+                    ruotaDX(x->father,testaComp);
+                    frat=x->father->leftSon;
+                }
+                if(frat->rightSon->isBlack && frat->leftSon->isBlack){
+                    frat->isBlack=false;
+                    x=x->father;
+                }
+                else{
+                    if(frat->leftSon->isBlack){
+                        frat->rightSon->isBlack=true;
+                        frat->isBlack=false;
+                        ruotaSX(frat,testaComp);
+                        frat=x->father->leftSon;
+                    }
+                    frat->isBlack=x->father->isBlack;
+                    x->father->isBlack=true;
+                    frat->leftSon->isBlack=true;
+                    ruotaDX(x->father, testaComp);
+                    x=testaComp;
+                }
+        }
+        
+   }
+   x->isBlack=true;
+}
+ */
 //per contrarre i compatibili
 TreeNode *cancellazioneNodoAlbero(TreeNode* nodo){//rendere nuovamente rb
     TreeNode *nodoSos;
@@ -465,12 +475,59 @@ TreeNode *cancellazioneNodoAlbero(TreeNode* nodo){//rendere nuovamente rb
         innestaSopra(min,nodo,testaComp);
         min->leftSon=nodo->leftSon;
         min->leftSon->father=min;
-        min->isBlack = nodo->isBlack;//wasBlack;//???corretto?
         if(nodo->father==NULLO)
             testaComp=min;
         return min;
     }
 }
+/*
+void cancellazioneNodoAlberoV2(TreeNode* nodo){//sistema e aggiungi fixup
+    TreeNode *x;
+    TreeNode *y;
+    treeModified=true;
+    bool needToFixUp=nodo->isBlack;
+    if(nodo->leftSon==NULLO){
+        x=nodo->rightSon;
+        innestaSopra(nodo->rightSon, nodo, testaComp);
+        return;
+        if(needToFixUp)
+            sistemaDopoCancellazione(x);
+        //return nodo->rightSon;
+    }else if(nodo->rightSon==NULLO) {
+        x=nodo->leftSon;
+        innestaSopra(nodo->leftSon,nodo,testaComp);
+        return;
+        if(needToFixUp)
+            sistemaDopoCancellazione(x);
+        //return nodo->leftSon;
+    }else {//if(nodo->leftSon!=NULLO&&nodo->rightSon!=NULLO){
+        treeModified=true;
+        y = minOfSubTree(nodo->rightSon);
+        needToFixUp=y->isBlack;
+        x = y->rightSon;
+        if (y->father == nodo) {
+            x->father=y;
+        } else {
+            innestaSopra(y->rightSon, y, testaComp);//ottimizzabili(poco)
+            y->rightSon=nodo->rightSon;
+            y->rightSon->father=y;
+        }
+
+        innestaSopra(y, nodo, testaComp);
+        y->leftSon=nodo->leftSon;
+        y->leftSon->father=y;
+        y->isBlack=nodo->isBlack;
+        //if(nodo->father==NULLO)
+        //    testaComp=y;
+        if(needToFixUp) {
+            sistemaDopoCancellazione(x);
+
+        }
+
+    }
+}
+ */
+
 
 
 void attraversamentoIterativo(TreeNode* nodo){
@@ -502,22 +559,8 @@ void attraversamentoIterativo(TreeNode* nodo){
         attuale=successivo;
     }
 }
-//solo per stampa filtrate
-void attraversamentoOrdinato(TreeNode* vertice){
-    if(vertice==NULLO){
-        return;
-    }
-    attraversamentoOrdinato(vertice->leftSon);
-    //chiaveToStringa((vertice->chiave),nuf);
-  //  if(strcmp("_fah-",nuf)==0)
-    //    printf("lol");
-    customPrinter(vertice->nParola);
-
-    attraversamentoOrdinato(vertice->rightSon);
-
-}
 int mappaCharToInt64(char x){
-    if(x<91){
+   if(x<91){
         if(x>64)
             return x-54;
         if(x>46)
@@ -527,23 +570,14 @@ int mappaCharToInt64(char x){
     if(x>96)
         return x-59;
     return x-58;
+
 }
 
-bool pres(char *rParola, TreeNode* nodo){//todo rendere iterativokeyInt chiave
-    /*if(nodo==NULLO)
-        return false;
-    else if(nodo->chiave==chiave)
-        return true;
-    else if(nodo->chiave<chiave)
-        return pres(chiave,nodo->rightSon);
-    else if(chiave<nodo->chiave)
-        return pres(chiave,nodo->leftSon);
-    return false;*/
-
+bool pres(char *rParola, TreeNode* nodo){
     while(nodo!=NULLO){
-        if(strncmp(nodo->nParola,rParola,wordLen)>0)//nodo->chiave>chiave)
+        if(strPers(nodo->nParola,rParola))
             nodo=nodo->leftSon;
-        else if( strncmp(rParola,nodo->nParola,wordLen)>0)
+        else if( strPers(rParola,nodo->nParola))
             nodo=nodo->rightSon;
         if(stringUguale(nodo->nParola,rParola))
             return true;
@@ -553,63 +587,9 @@ bool pres(char *rParola, TreeNode* nodo){//todo rendere iterativokeyInt chiave
 bool presenteTraAmmissibili(char* parola){
     if(treeHead==nullHead)
         return false;//debug
-    //keyInt keyOfParola= string2chiave(parola);
     return pres(parola,treeHead);
 }
-/*
-TreeNode* trovaNodo(keyInt val, TreeNode* nodo){
-    if(nodo==NULLO)
-        return NULLO;
-    if(nodo->chiave<val && nodo->rightSon!=NULLO)
-        return trovaNodo(val,nodo->rightSon);
-    if(val<nodo->chiave && nodo->leftSon!=NULLO)
-        return trovaNodo(val,nodo->leftSon);
-    else return nodo;
-}*/
 
-
-
-
-
-/*
-// *************DEBUG
-
-
-int recContaPeso(TreeNode* nodo){
-    if(nodo==NULLO)
-        return 0;//non conto peso foglie null
-    int adder=0;
-    if(nodo->isBlack)
-        adder++;
-    int pesoDX= recContaPeso(nodo->rightSon);
-    int pesoSX= recContaPeso(nodo->leftSon);
-    if(pesoDX!=pesoSX  )
-    {
-        printf("right %d , left %d\n", pesoDX, pesoSX);
-        if(pesoSX<1000 && pesoDX<1000) {
-            printf("sotto alberi sbilanciati da nodo  %s\n", debugKEY(nodo->chiave));
-        }
-        return 1000;
-    }
-    return pesoSX+adder;
-}
-bool recControllaRB(TreeNode* nodo){
-    if(nodo==NULLO)
-        return true;
-    if(!nodo->isBlack)
-        if(!nodo->rightSon->isBlack || !nodo->leftSon->isBlack) {
-            //printf("nodo sbarellato %s\n", debugKEY(nodo->chiave));
-            return false;
-        }
-    return true;
-}
-void debugControlloAlbero(TreeNode* testa){
-    printf("peso albero %d\n", recContaPeso(testa));
-    if(!recControllaRB(testa))
-        printf("nodo cattivo\n");
-}
-
-*/
 
 
 
@@ -617,16 +597,17 @@ void debugControlloAlbero(TreeNode* testa){
 
 int leggiParolaPerConfronto(){
     char in=(char ) getchar();
-    lineS++;
     if(in == '+'){
         return 1;
     }
     wordk[0]=in;
     int i=1;
     in= (char)getchar_unlocked();
-    while(in!='\n' && i<wordLen){
-        wordk[i]=in;
-        i++;
+    while(in!='\n' ){
+       if(in!='\r') {
+           wordk[i] = in;
+           i++;
+       }
         in=(char ) getchar_unlocked();
     }
 
@@ -642,15 +623,14 @@ int leggiParolaPerConfronto(){
 
 }
 
-bool treeModified;
 bool rispettaTotalMask(char* string){//todo scrivi versione che tiene conto di cosa non ricontrollare e usa solo costraint nuovi
+
+
     for(int i=0;i<wordLen;i++) {
         if (totalMask->ofPos[i].notAppear[mappaCharToInt64(string[i])] == '1')
             return false;
     }
-    //bool ok=true;
     for (int i = 0; i < wordLen; ++i) {
-        //countConfronto[mappaCharToInt64(string[i])]--;
         if (totalMask->ofPos[i].sureValue != string[i] && totalMask->ofPos[i].sureValue != 0)
             return false;
     }
@@ -659,10 +639,10 @@ bool rispettaTotalMask(char* string){//todo scrivi versione che tiene conto di c
         return false;
     }
     memset(countConfronto, 0, 64);
+
     return true;
-    //countConfronto[mappaCharToInt64(string[i])]--;
 }
-bool ammissibileDaConfronto(char* damn,char* nonPresenti, int nNonPresenti){
+bool ammissibileDaConfronto(char* damn,char* nonPresenti, int nNonPresenti){//obsoleto e lento
     for (int j = 0; j < wordLen; ++j) {
         if(!accConfrontoLettera(j, wordk[j], damn[j])) {
             return false;
@@ -675,10 +655,7 @@ bool ammissibileDaConfronto(char* damn,char* nonPresenti, int nNonPresenti){
     return true;
 
 }
-int removed;
-TreeNode **nodeWaitingRoom;
-//tree of junk
-//aka feed garbodor
+//tree of junk, aka feed the garbodor, garbodor is so cool, I love him
 void recycleIsGood(TreeNode* rimosso){
 
     if(riciclati==0){
@@ -697,286 +674,190 @@ void recycleIsGood(TreeNode* rimosso){
     riciclati++;
 
 }
-void removalOfSelected(){
-    for (int i = 0; i < removed; ++i) {
-        cancellazioneNodoAlbero(nodeWaitingRoom[i]);
-        recycleIsGood(nodeWaitingRoom[i]);
-        //free(nodeWaitingRoom[i]);
-    }
-    removed=0;
-}
-void boiIterativo(TreeNode* nodo){
-    TreeNode *attuale=nodo;
-    TreeNode *precedente=NULLO;
-    TreeNode * successivo;
-    while (attuale!=NULLO){
-        if(precedente==NULLO||precedente==attuale->father){
-            if(attuale->leftSon!=NULLO)
-                successivo=attuale->leftSon;
-            else{
+//versione 4, scorre il tree di memoria e decide se salvare in compatibili
+void fasterIterativeAggiungiACompatibili(TreeNode* root)
+{
+    if (root == NULLO)
+        return;
+    TreeNode *attuale;
+    TreeNode *precedente;
+    attuale = root;
+    while (attuale != NULLO) {
 
-
-                if(isFromNuInserisci){
-                    if(rispettaTotalMask(attuale->nParola)){
-                        isFromNuInserisci=false;
-                        salvaInCompatibili(attuale->nParola);
-                        compatibili++;
-                    }
-                }else  if(constraintRun(attuale->nParola)){
-                    isFromNuInserisci=false;
-                    salvaInCompatibili(attuale->nParola);
-                    compatibili++;
-                }
-
-
-                if(attuale->rightSon!=NULLO)
-                    successivo=attuale->rightSon;
-                else successivo=attuale->father;
-            }
-        } else if(precedente==attuale->leftSon){
-
-
-            if(isFromNuInserisci){
+        if (attuale->leftSon == NULLO) {
+            if(isFromNuInserisci){//non son sicuro questa roba abbia utilizzo, ma funziona e quindi non la tocco
                 if(rispettaTotalMask(attuale->nParola)){
                     isFromNuInserisci=false;
-                    salvaInCompatibili(attuale->nParola);
+                    aggiungiNodoPerCompatibili(attuale->nParola);
                     compatibili++;
                 }
             }else  if(constraintRun(attuale->nParola)){
                 isFromNuInserisci=false;
-                salvaInCompatibili(attuale->nParola);
+                aggiungiNodoPerCompatibili(attuale->nParola);
                 compatibili++;
             }
-
-
-            if(attuale->rightSon!=NULLO)
-                successivo=attuale->rightSon;
-            else successivo=attuale->father;
-        } else successivo=attuale->father;
-        precedente=attuale;
-        attuale=successivo;
-    }
-}
-void aggCompDaAmmissibili(TreeNode* nodo ){
-    //if(nodo==NULLO)
-      //  return;
-    if(isFromNuInserisci){
-        if(rispettaTotalMask(nodo->nParola)){
-            isFromNuInserisci=false;
-            aggiungiNodoPerCompatibili(nodo->nParola);
-            compatibili++;
+            attuale = attuale->rightSon;
         }
-    }else  if(constraintRun(nodo->nParola)){
-            isFromNuInserisci=false;
-            aggiungiNodoPerCompatibili(nodo->nParola);
-            compatibili++;
-        }
-    if(nodo->leftSon!=NULLO)
-        aggCompDaAmmissibili(nodo->leftSon);
-    if(nodo->rightSon!=NULLO)
-        aggCompDaAmmissibili(nodo->rightSon);
-}
-
-void rimCompIt(TreeNode* nodo){
-    TreeNode *attuale=nodo;
-    TreeNode *precedente=NULLO;
-    TreeNode * successivo;
-    while (attuale!=NULLO){
-        if(precedente==NULLO||precedente==attuale->father){
-            if(attuale->leftSon!=NULLO)
-                successivo=attuale->leftSon;
-            else{
-
-
-                if(!constraintRun(attuale->nParola)){
-                    nodeWaitingRoom[removed]=attuale;
-                    removed++;
-                    compatibili--;
-                    if(removed==REMOVEDBLOCK){
-                        removalOfSelected();
-                        treeModified=true;
-                        return;
+        else {
+            precedente = attuale->leftSon;
+            while (precedente->rightSon != NULLO
+                   && precedente->rightSon != attuale)
+                precedente = precedente->rightSon;
+            if (precedente->rightSon == NULLO) {
+                precedente->rightSon = attuale;
+                attuale = attuale->leftSon;
+            }
+            else {
+                precedente->rightSon = NULLO;
+                if(isFromNuInserisci){
+                    if(rispettaTotalMask(attuale->nParola)){
+                        isFromNuInserisci=false;
+                        aggiungiNodoPerCompatibili(attuale->nParola);
+                        compatibili++;
                     }
+                }else  if(constraintRun(attuale->nParola)){
+                    isFromNuInserisci=false;
+                    aggiungiNodoPerCompatibili(attuale->nParola);
+                    compatibili++;
                 }
-
-
-                if(attuale->rightSon!=NULLO)
-                    successivo=attuale->rightSon;
-                else successivo=attuale->father;
+                attuale = attuale->rightSon;
             }
-        } else if(precedente==attuale->leftSon){
-
-
-            if(!constraintRun(attuale->nParola)){
-                nodeWaitingRoom[removed]=attuale;
-                removed++;
-                compatibili--;
-                if(removed==REMOVEDBLOCK){
-                    removalOfSelected();
-                    treeModified=true;
-                    return;
-                }
-            }
-
-
-            if(attuale->rightSon!=NULLO)
-                successivo=attuale->rightSon;
-            else successivo=attuale->father;
-        } else successivo=attuale->father;
-        precedente=attuale;
-        attuale=successivo;
-    }
+        }
+    } 
 }
 
-/*
-struct stackPers{
-    TreeNode *data;
-    struct stackPers* succ;
-};
 
-struct stackPers* cima;
-int stackDim;
-struct stackPers* reserve;
-int reserveDim;
-
-void push(TreeNode* nodo){
-    if(reserveDim>0){
-        struct stackPers* temp=reserve->succ;
-        reserve->succ=cima;
-        cima=reserve;
-        cima->data=nodo;
-        reserve=temp;
-        reserveDim--;
-        stackDim++;
-        return;
-    }
-    struct stackPers* temp= malloc(sizeof(struct stackPers));
-    temp->data=nodo;
-    temp->succ=cima;
-    cima=temp;
-    stackDim++;
-}
-TreeNode *pop(){
-    struct stackPers* temp=cima->succ;
-    cima->succ=reserve;
-    cima=temp;
-    stackDim--;
-    reserveDim++;
-    return reserve->data;
-}
-void resettaRiserva(){
-    if(cima==NULL)
-        return;
-    struct stackPers* temp=cima->succ;
-    while(temp!=NULL){
-        cima->succ=reserve;
-        reserve=cima;
-        cima=temp;
-        temp=cima->succ;
-        reserveDim++;
-    }
-    stackDim=0;
-}
-
-void iterativePreorder(TreeNode* testa){
-    //cima=NULL;
-    //cima->data=testa;
-    push(testa);
-    TreeNode *nn;
-    while(stackDim!=0){
-        nn=pop();
-        printf("%s", nn->nParola);//placeholder
-        if (nn->rightSon!=NULL)
-            push(nn->rightSon);
-        if (nn->leftSon!=NULL)
-            push(nn->leftSon);
-    }
-
-
-}
-*/
-
-
-
-
-
-int recStopper;
 void rimuoviDaCompatibili(TreeNode* nodo ){
-    if(treeModified || nodo == NULLO)
+    if( nodo == NULLO)
         return;
-    recStopper++;/*
-    if(recStopper>1000){
-        treeModified=true;
-        recStopper=0;
-        return;
-    }*/
     TreeNode *nod;
-    while(!constraintRun(nodo->nParola) && nodo!=NULLO){
-        //nodeWaitingRoom[removed]=nodo;
+    while(!constraintRun(nodo->nParola)){//dopo aver cancellato la parola continua dal suo sostituto
         nod = cancellazioneNodoAlbero(nodo);
         recycleIsGood(nodo);
         compatibili--;
         nodo=nod;
-        //rimuoviDaCompatibili(nod);
-        //while()
-        //return;
-        /*removed++;
-        if(removed==REMOVEDBLOCK){
-            removalOfSelected();
-            treeModified=true;
+        if(nodo==NULLO)
             return;
-        }*/
     }
-   // if(nodo->leftSon!=NULLO)
+    if(nodo->leftSon!=NULLO)
         rimuoviDaCompatibili(nodo->leftSon);
-    //if (nodo->rightSon!=NULLO)
+    if (nodo->rightSon!=NULLO)
         rimuoviDaCompatibili(nodo->rightSon);
 }
-
 void aggiornaCompatibili( ){
-    //nNonPr=nNonPresenti;
-    //generaOscartaNuoviCon();
     if(compatibili == 0) {
-        //aggCompDaAmmissibili(treeHead);
-        boiIterativo(treeHead);
+        fasterIterativeAggiungiACompatibili(treeHead);
+
     }else{
         do {
-            recStopper=0;
             treeModified=false;
             rimuoviDaCompatibili(testaComp );
-            //rimCompIt(testaComp);
         } while (treeModified);
-        //removalOfSelected();
+        aggiustato=false;
     }
-
     printf("%d\n", compatibili);
 }
+
+
+int moaronna;
+void recBalla(TreeNode *arr[],TreeNode*nodo ){//iterativamente inserisce in un'array ordinato O(n)<- potrebbero esserci casini per lo stack usato
+    if(nodo==NULLO || moaronna>=compatibili)
+        return;
+    recBalla( arr,nodo->leftSon);
+    arr[moaronna]=nodo;
+    moaronna++;
+    recBalla( arr,nodo->rightSon);
+
+}
+
+void attMorrisonPerArr(TreeNode *arr[]){// attraversamento di morrison (inorder senza stack) creo "l' array dell'albero "
+    TreeNode *attuale;
+    TreeNode *precedente;
+
+    if (testaComp == NULLO)
+        return;
+
+    attuale = testaComp;
+    while (attuale != NULLO) {
+        if (attuale->leftSon == NULLO) {
+            arr[moaronna]=attuale;
+            moaronna++;
+            attuale = attuale->rightSon;
+        }
+        else {
+            precedente = attuale->leftSon;
+            while (precedente->rightSon != NULLO
+                   && precedente->rightSon != attuale)
+                precedente = precedente->rightSon;
+
+            if (precedente->rightSon == NULLO) {
+                precedente->rightSon = attuale;
+                attuale = attuale->leftSon;
+            }
+            else {
+                precedente->rightSon = NULLO;
+                arr[moaronna]=attuale;
+                moaronna++;
+                attuale = attuale->rightSon;
+            }
+        }
+    }
+}
+TreeNode * reinstallaAlbero(TreeNode*arr[], int inizio, int fine){//usando l'array ricrea l'albero bilanciato
+    if(inizio>fine )
+        return NULLO;
+    int met=(inizio+fine)/2;
+    TreeNode * nodo=arr[met];
+    nodo->leftSon=reinstallaAlbero(arr,inizio, met-1);
+    nodo->leftSon->father=nodo;
+    nodo->rightSon= reinstallaAlbero(arr, met+1,fine);
+    nodo->rightSon->father=nodo;
+    return nodo;
+}
+//approccio O(n) per ribilanciare un albero(i compatibili non sono bilanciati nella cancellazione)
+//cosi eventuali nuovi inserimenti prendono solo O(log n ) per parola
+void recreateTheTree(){
+    TreeNode **arr=malloc(sizeof(TreeNode* )*compatibili);
+    moaronna=0;
+    attMorrisonPerArr( arr);
+    testaComp= reinstallaAlbero(arr,0,compatibili-1);
+    testaComp->father=NULLO;
+}
+
 
 void aggiornaCompatibiliNuovo(char* parolaNuova) {
     if( *confInPartita ==0)
         return;
     if (rispettaTotalMask(parolaNuova) ) {
+        if(!aggiustato ) {
+            recreateTheTree();
+            aggiustato=true;
+        }
         compatibili++;
-        salvaInCompatibili(parolaNuova);
+        aggiungiNodoPerCompatibili(parolaNuova);
+
     }
 }
 
+bool startNuova;//usato unicamente per tenere conto se si è alla prima partita, potrei usare altre cose ma fa niente
 
 void aggiungiAmmissibili(){
     int bo=1;
 
     do{
-        lineS++;
         int i=0;
         char in=(char)getchar_unlocked();
         if(in!='+') {
             do {
-                wordk[i] = in;
+                if(in!='\r')//fixme eee
+                {
+                    wordk[i] = in;
+                    i++;
+                }
                 in = (char)getchar_unlocked();
-                i++;
-            } while (in != '\n' && i < wordLen);
-            wordk[wordLen]='\0';
 
+            } while (in != '\n' );
+            wordk[wordLen]='\0';
             isFromNuInserisci=true;
             aggiungiNodoAMem(wordk);
             salvate++;
@@ -987,25 +868,14 @@ void aggiungiAmmissibili(){
         }
 
     } while (bo==1);
-    if(nPartite==0)
-        return;
+    if(startNuova)
+       return;
     char in;
     do {
         in =(char) getchar_unlocked();
     } while (in != '\n');
 }
 
-
-//word è un puntatore a un buffer, bisogna copiare la stringa in un nuovo blocco
-void salvaAmmissibile(char* word){
-    aggiungiNodoAMem(word);
-    salvate++;
-
-}
-//parola è il puntatore alla string del nodo del tree principale
-void salvaInCompatibili(char* parola){
-    aggiungiNodoPerCompatibili(parola);
-}
 
 
 //------------------strutture utils
@@ -1035,8 +905,6 @@ int posOfLetterInReferences(char lettera){
 void initPartita(){
     references= malloc(sizeof (*references));
     totalMask= malloc(sizeof(megaMask));
-    //nonPres= malloc((wordLen+1)* sizeof(char ));
-    //nonPres[wordLen]='\0';
     posMask* posMaschera= malloc(wordLen * sizeof (posMask));//todo malloc the space for the structures
     for (int i = 0; i < wordLen; ++i) {
         char *initAr= malloc(64);//fixme make of bits
@@ -1076,7 +944,6 @@ void initPartita(){
 }
 
 void initSuccessivi(){
-    //deAllocaCompatibili(testaComp);
     deAllocaIterativo(testaComp);
     //rinnovo compatibili
     testaComp=nullHead;
@@ -1091,7 +958,7 @@ void initSuccessivi(){
     int cc=0;
 
     references->numberOfApp[0]=1;
-    for (int i = 1; i < wordLen; ++i) {//occhio a dimensioni e valore di cc
+    for (int i = 1; i < wordLen; ++i) {
         if(orderedRef[i]!=references->appearing[cc]){
             cc++;
             references->appearing[cc]=orderedRef[i];
@@ -1137,23 +1004,6 @@ bool contieneAlmenoNecessarie(const char *parolaDelNodo){
     }
 
     return true;
-
-
-
-
-
-
-    int app;
-    for (int i = 0; i < references->nUniche; ++i) {
-        app=0;
-        for (int j = 0; j < wordLen; ++j) {
-            if(references->appearing[i] == parolaDelNodo[j] )
-                app++;
-        }
-        if(!((app>=totalMask->ofChars[i].appears && totalMask->ofChars[i].isMax==0) || (totalMask->ofChars[i].isMax==1 && app==totalMask->ofChars[i].appears)))
-             return false;
-    }
-    return true;
 }
 bool contieneCaratteriNonPresenti(const char* parola, const char* nonPresenti, int quanteNP){
     for (int i = 0; i < wordLen; ++i) {
@@ -1164,10 +1014,12 @@ bool contieneCaratteriNonPresenti(const char* parola, const char* nonPresenti, i
     }
     return false;
 }
+struct maskOfPos *fastNotApp;
 
 void initConstraintLists(){
     nuoviPos= malloc(sizeof(int)*wordLen);
     nuoviNotPos= malloc(sizeof(int)*wordLen);
+    fastNotApp= malloc(sizeof(struct maskOfPos)*wordLen);
     nuoviQuant= malloc(sizeof(struct constQuanList)*wordLen);
     dimP=0;
     dimNP=0;
@@ -1180,6 +1032,7 @@ void resetConstraintLists(){
 }
 void newNotAppearConstraint( int pos){
     nuoviNotPos[dimNP]=pos;
+    fastNotApp[dimNP].notAppear=totalMask->ofPos[pos].notAppear;
     dimNP++;
 }
 void newAppearConstraint( int pos){
@@ -1199,6 +1052,7 @@ bool giaPresenteNotAppear(int pos){
     }
     return false;
 }
+
 /**
  * crea nuova maschera e aggiorna quella completa
  * @param parola parola da confrontare con riferimento
@@ -1226,19 +1080,14 @@ void confronto(){//fixme, qualcosa non funziona, capire perché
             totalMask->ofPos[i].sureValue=wordk[i];
 
         }else if(pos==-1){
-            //nonPres[nNP]=wordk[i];
             nNP++;
-            //if(totalMask->ofPos[i].notAppear[mappaCharToInt64(wordk[i])]!='1') {
-                totalMask->ofPos[i].notAppear[mappaCharToInt64(wordk[i])] = '1';
-            newNotAppearConstraint(i);
-            //    newNotAppearConstraint(wordk[i],i);
-           // }
+            if(!giaPresenteNotAppear(i))
+                newNotAppearConstraint(i);
+            totalMask->ofPos[i].notAppear[mappaCharToInt64(wordk[i])] = '1';
         }
 
     }
 
-
-    //nonPres[nNP]='\0';
     for(int i =0; i < wordLen; i++) {
         int prs = presenzeInRef(wordk[i]);
         if (prs > 0) {
@@ -1249,7 +1098,7 @@ void confronto(){//fixme, qualcosa non funziona, capire perché
             if (wordk[i] != riferimento[i]) {
                     presenti[pos]++;
                     if (prs >= presenti[pos]){
-                        mascheraAt[i] = '|';//corrette++; nn serve
+                        mascheraAt[i] = '|';//presente ma non qui
                     } else {
                         mascheraAt[i] = '/';//se ne sono gia apparse troppe
                     }
@@ -1259,7 +1108,7 @@ void confronto(){//fixme, qualcosa non funziona, capire perché
                              newNotAppearConstraint(i);
                     }
             }
-        }else {//ma questo else viene mai visitato????? prob no fixme
+        }else {
             mascheraAt[i] = '/';//non appare nemmeno una volta
             for (int j = 0; j < wordLen; ++j) {
                 if(totalMask->ofPos[j].notAppear[mappaCharToInt64(wordk[i])]!='1' ) {
@@ -1295,7 +1144,7 @@ void confronto(){//fixme, qualcosa non funziona, capire perché
         return;
     }
     printf("%s\n",mascheraAt);
-    aggiornaCompatibili(   );
+    aggiornaCompatibili();
 
 }
 
@@ -1304,8 +1153,6 @@ bool esattamenteNlett(const char* parola, char lett, int N){
     for (int i = 0; i < wordLen; ++i) {
         if (parola[i]==lett)
             app++;
-        //if(app==N)
-            //return true;
     }
     return(app==N);
 }
@@ -1321,24 +1168,28 @@ bool almenoNlett(const char* parola, char lett, int N){
     return(app>=N);
 }
 
-
 bool constraintRun(const char * parola){
-    for (int i = 0; i < dimP; ++i) {//modifica in while succ!=null
-        if(parola[nuoviPos[i]]!=wordk[nuoviPos[i]])//presenteCorretto(parola,wordk[nuoviPos[i]],nuoviPos[i]) )
-            return false;
-    }
-    for (int i = 0; i < dimNP; ++i) {
-        if(totalMask->ofPos[nuoviNotPos[i]].notAppear[mappaCharToInt64(parola[nuoviNotPos[i]])]=='1')//nonPresenteCorretto(parola,nuoviNotPos[i]))
-            return false;
-    }
+
+
     for (int i = 0; i < dimQ; ++i) {
         if(nuoviQuant[i].isMax ){
             if(!esattamenteNlett(parola,nuoviQuant[i].lettera,nuoviQuant[i].quant)) {
-                return false; }
+                return false;
+            }
 
         }else if(!almenoNlett(parola,nuoviQuant[i].lettera,nuoviQuant[i].quant)) {
-            return false; }
+            return false;
+        }
     }
+    for (int i = 0; i < dimNP; ++i) {
+        if(fastNotApp[i].notAppear[mappaCharToInt64(parola[nuoviNotPos[i]])]=='1')
+            return false;
+    }
+    for (int i = 0; i < dimP; ++i) {
+        if(parola[nuoviPos[i]]!=wordk[nuoviPos[i]])
+            return false;
+    }
+
     return true;
 }
 
@@ -1346,28 +1197,26 @@ bool constraintRun(const char * parola){
 //------------------comandi
 void stampaFiltrate(){
     if(compatibili > 0){
-        //attraversamentoOrdinato(testaComp);
         attraversamentoIterativo(testaComp);
+
     }else
         attraversamentoIterativo(treeHead);
 }
 
-bool startNuova;
-
 void nuovaPartita() {
-    //char buff[wordLen];
     compatibili = 0;
     char in = (char) getchar_unlocked();
     int i = 0;
     if (in != '+') {
         do {
-            riferimento[i] = in;
+            if(in!='\r') {
+                riferimento[i] = in;
+                i++;
+            }
             in = (char) getchar_unlocked();
-            i++;
+
         } while (in != '\n');
     }
-    lineS++;
-    // printf("%s\n", riferimento);
     in = (char) getchar_unlocked();
     i = 0;
     if (in != '+') {
@@ -1377,14 +1226,12 @@ void nuovaPartita() {
             i++;
         } while (in != '\n');
     }
-    lineS++;
     wordk[i]='\0';
     tentativi = atoi(wordk);
     char sw;
-    orderedRef = strcpy(orderedRef, riferimento);
+    orderedRef = strcpy(orderedRef, riferimento);//fixme, ma anche no, viene fatto una sola volta, ci sta
     for (int l = 0; l < wordLen; ++l) {
-        for (int j = l + 1; j <
-                            wordLen; ++j) {//fixme un sort con complessità migliore (non fondamentale, tanto la complessità e su wordLen, wordLen^2=25, klogk=15)
+        for (int j = l + 1; j <wordLen; ++j) {// stupidSort
             if (orderedRef[l] > orderedRef[j]) {
                 sw = orderedRef[l];
                 orderedRef[l] = orderedRef[j];
@@ -1408,16 +1255,18 @@ void nuovaPartita() {
             been= (char)getchar_unlocked();
             p=0;
             while (been!='\n'){
-                buf[p]=been;
+                if(been!='\r'){//fixme controllo, \r causa problemi di input usando il generatore
+                    buf[p] = been;
+                    p++;
+                }
                 been= (char)getchar_unlocked();
-                p++;
             }
             buf[p]='\0';
             if(buf[0]=='i')
                 aggiungiAmmissibili();
             else if(buf[0]=='s')
                 stampaFiltrate();
-            else if(buf[0]=='n') {
+            else if(buf[0]=='n') {//caso che accade unicamente per via di errori precedenti
                 printf("what!? %s %d   tentivi fatti  %d  tent max %d\n", buf,nPartite, *confInPartita, tentativi);
                 *confInPartita=tentativi+1;
                 exit(11);
@@ -1429,12 +1278,10 @@ void nuovaPartita() {
         printf("ko\n");
     }
 
-
-
 }
 
 
-
+//restituisce il puntatore alla funzione da chiamare
 void* eseguiComando(){
     char buf[20];
     char in= (char)getchar_unlocked();
@@ -1460,7 +1307,6 @@ void* eseguiComando(){
 }
 
 int main(){
-    lineS=0;
     riciclati=0;
     nPartite=0;
  //
@@ -1470,31 +1316,29 @@ int main(){
     }
     confInPartita= malloc(sizeof (int));
     *confInPartita=0;
-    char input[5];
+    char input[30];
     char in=(char)getchar_unlocked();
     int i=0;
     while(in!='\n' && in!='+'){
-        input[i]=in;
+        if(in!='\r') {
+            input[i] = in;
+            i++;
+        }
         in=(char)getchar_unlocked();
-        i++;
+
     }
-    input[4]='\0';
+    input[i]='\0';
     wordLen= atoi(input);
-    lineS++;
 
     //allocazione buffer parole di lunghezza wordlen
     wordk= malloc((wordLen+1)* sizeof(char ));
     wordk[wordLen]='\0';
 
     //allocazione per batch
-    nodeWaitingRoom= malloc(REMOVEDBLOCK* sizeof(TreeNode*));
     bloccoDiMalloc= malloc(ADDEDBLOCK* sizeof (TreeNode));
     bloccoDiStringNU= malloc(ADDEDBLOCK* wordLen*sizeof(char));
 
     //allocazione riferimenti constraint
-    //nuoviQuant= malloc(sizeof(struct constQuanList));
-   // nuoviPos= malloc(sizeof(struct constPosList));
-    //nuoviNotPos= malloc(sizeof(struct constNotPosList));
     initConstraintLists();
 
     //allocazione riferimenti alberi
@@ -1511,7 +1355,7 @@ int main(){
     NULLO->nParola=nullHead->nParola;
     nullHead->nParola[0]='s';
     nullHead->nParola[1]='\0';
-   // copiaParola(nullHead->nParola,"s");
+
     testaComp=nullHead;
     treeHead=nullHead;
 
@@ -1523,6 +1367,9 @@ int main(){
     mascheraAt= malloc((wordLen+1)* sizeof(char ));
     mascheraAt[wordLen]='\0';
 
+
+
+    startNuova=true;
     aggiungiAmmissibili();
     startNuova=false;
     void (*exec)()= eseguiComando();//esegui comando nel caso avvenga roba prima di nuova partita => inizializzare roba di init prima
@@ -1535,7 +1382,6 @@ int main(){
 
     char rest= (char)getchar_unlocked();
     while (rest=='+'){
-        lineS++;
          void (*ptr)()=eseguiComando();
          ptr();
         if(startNuova){
